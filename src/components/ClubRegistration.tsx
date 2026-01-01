@@ -20,11 +20,15 @@ import {
   Card,
   CardMedia,
   CardContent,
-  // Tooltip,
+  Divider,
   CircularProgress,
   InputAdornment,
 } from "@mui/material";
 import EmailIcon from "@mui/icons-material/Email";
+import PersonIcon from "@mui/icons-material/Person";
+import SchoolIcon from "@mui/icons-material/School";
+import PhoneIcon from "@mui/icons-material/Phone";
+import BadgeIcon from "@mui/icons-material/Badge";
 
 const clubs = [
   {
@@ -65,56 +69,85 @@ const clubs = [
   },
 ];
 
+const BACKEND_URL = "http://localhost:5000"; // Change to production URL later
+
 const ClubRegistration: React.FC = () => {
-  const [step, setStep] = useState(0); // 0: Verify, 1: Form, 2: Success
+  const [step, setStep] = useState(0);
   const [email, setEmail] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [verificationError, setVerificationError] = useState("");
-  const [selectedClub, setSelectedClub] = useState("");
+
   const [formData, setFormData] = useState({
     fullName: "",
     gradeSection: "",
     contactNumber: "",
+    lrn: "",
+    email: "",
   });
+
+  const [selectedClub, setSelectedClub] = useState("");
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  // Navbar offset
   const navbarHeight = isMobile ? 64 : 80;
   const extraDesktopMargin = isMobile ? 0 : 24;
   const topOffset = navbarHeight + extraDesktopMargin;
 
-  const steps = ["Verify Identity", "Fill Registration", "Confirmation"];
+  const steps = ["Verify Email", "Registration Details", "Confirmation"];
 
-  const handleSendVerification = () => {
-    //@deped.gov.ph  plalitan nyo nalang kung gusto nyo eto gamitin na ext
-
+  const handleSendVerification = async () => {
     if (!email.includes("@") || !email.endsWith("@gmail.com")) {
-      setVerificationError(
-        "Please use a valid school email (e.g., @gmail.com)."
-      );
+      setVerificationError("Please use a valid Gmail address (@gmail.com)");
       return;
     }
+
     setIsVerifying(true);
     setVerificationError("");
-    // Simulate sending code
-    setTimeout(() => {
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/club/send-verification`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to send code");
+      }
+
       setVerificationSent(true);
+    } catch (err: any) {
+      setVerificationError(err.message || "Network error. Try again.");
+    } finally {
       setIsVerifying(false);
-    }, 1500);
+    }
   };
 
-  const handleVerifyCode = () => {
-    if (verificationCode === "123456") {
-      // Simulated code
+  const handleVerifyCode = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/club/verify-code`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: verificationCode }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Invalid or expired code");
+      }
+
+      setFormData((prev) => ({ ...prev, email }));
       setStep(1);
       setVerificationError("");
-    } else {
-      setVerificationError("Invalid code. Try again.");
+    } catch (err: any) {
+      setVerificationError(err.message || "Verification failed.");
     }
   };
 
@@ -126,19 +159,48 @@ const ClubRegistration: React.FC = () => {
 
   const validateForm = () => {
     const errors: { [key: string]: string } = {};
-    if (!formData.fullName) errors.fullName = "Required";
-    if (!formData.gradeSection) errors.gradeSection = "Required";
+    if (!formData.fullName.trim()) errors.fullName = "Required";
+    if (!formData.gradeSection.trim()) errors.gradeSection = "Required";
     if (!formData.contactNumber || formData.contactNumber.length < 10)
-      errors.contactNumber = "Valid contact number required";
+      errors.contactNumber = "Valid 10+ digit number required";
+    if (!formData.lrn || formData.lrn.length !== 12)
+      errors.lrn = "Valid 12-digit LRN required";
     if (!selectedClub) errors.club = "Please select a club";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateForm()) {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/club/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          gradeSection: formData.gradeSection,
+          contactNumber: formData.contactNumber,
+          lrn: formData.lrn,
+          email: formData.email,
+          club: selectedClub,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Registration failed");
+      }
+
       setStep(2);
+    } catch (err: any) {
+      setSubmitError(err.message || "Failed to submit. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -166,16 +228,6 @@ const ClubRegistration: React.FC = () => {
           >
             Club Registration Portal
           </Typography>
-          <Typography
-            variant="h6"
-            color="text.secondary"
-            align="center"
-            paragraph
-            sx={{ mb: 6, maxWidth: "80%", mx: "auto" }}
-          >
-            Join our vibrant clubs to explore your passions, build skills, and
-            make lifelong friends!
-          </Typography>
 
           <Stepper activeStep={step} alternativeLabel sx={{ mb: 8 }}>
             {steps.map((label) => (
@@ -185,15 +237,16 @@ const ClubRegistration: React.FC = () => {
             ))}
           </Stepper>
 
+          {/* Step 1: Email Verification */}
           {step === 0 && (
-            <Box sx={{ textAlign: "center", maxWidth: "sm", mx: "auto" }}>
+            <Box sx={{ maxWidth: 480, mx: "auto", textAlign: "center" }}>
               <Typography
                 variant="h5"
                 gutterBottom
                 fontWeight="bold"
                 color="#1e3a8a"
               >
-                Step 1: Verify Your School Email
+                Step 1: Verify Your Email
               </Typography>
               <Typography
                 variant="body1"
@@ -201,19 +254,17 @@ const ClubRegistration: React.FC = () => {
                 paragraph
                 sx={{ mb: 4 }}
               >
-                Enter your DepEd school email to receive a verification code.
+                Enter your Gmail address to receive a verification code
               </Typography>
+
               <TextField
-                label="School Email"
+                label="Your Gmail Address"
                 fullWidth
                 variant="outlined"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 error={!!verificationError}
-                helperText={
-                  verificationError ||
-                  "e.g., student@juliaortizluisnhs.deped.gov.ph"
-                }
+                helperText={verificationError || "We'll send a 6-digit code"}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -221,7 +272,9 @@ const ClubRegistration: React.FC = () => {
                     </InputAdornment>
                   ),
                 }}
+                sx={{ mb: 4 }}
               />
+
               {!verificationSent ? (
                 <Button
                   variant="contained"
@@ -229,20 +282,25 @@ const ClubRegistration: React.FC = () => {
                   size="large"
                   fullWidth
                   onClick={handleSendVerification}
-                  disabled={isVerifying}
-                  sx={{ mt: 4, py: 1.5, borderRadius: 50 }}
+                  disabled={isVerifying || !email.includes("@gmail.com")}
+                  sx={{ py: 1.5, borderRadius: 50 }}
                 >
-                  {isVerifying ? <CircularProgress size={24} /> : "Send Code"}
+                  {isVerifying ? (
+                    <CircularProgress size={24} color="inherit" />
+                  ) : (
+                    "Send Verification Code"
+                  )}
                 </Button>
               ) : (
                 <>
                   <TextField
-                    label="Verification Code"
+                    label="Enter 6-digit Code"
                     fullWidth
                     variant="outlined"
                     value={verificationCode}
                     onChange={(e) => setVerificationCode(e.target.value)}
-                    sx={{ mt: 3 }}
+                    sx={{ mb: 4 }}
+                    inputProps={{ maxLength: 6 }}
                   />
                   <Button
                     variant="contained"
@@ -250,7 +308,7 @@ const ClubRegistration: React.FC = () => {
                     size="large"
                     fullWidth
                     onClick={handleVerifyCode}
-                    sx={{ mt: 3, py: 1.5, borderRadius: 50 }}
+                    sx={{ py: 1.5, borderRadius: 50 }}
                   >
                     Verify & Continue
                   </Button>
@@ -259,6 +317,7 @@ const ClubRegistration: React.FC = () => {
             </Box>
           )}
 
+          {/* Step 2: Registration Form */}
           {step === 1 && (
             <Box component="form" onSubmit={handleSubmit}>
               <Typography
@@ -271,8 +330,25 @@ const ClubRegistration: React.FC = () => {
                 Step 2: Registration Details
               </Typography>
 
+              <Box
+                sx={{
+                  mb: 4,
+                  p: 2,
+                  bgcolor: "rgba(30,58,138,0.08)",
+                  borderRadius: 2,
+                  border: "1px solid rgba(30,58,138,0.15)",
+                }}
+              >
+                <Typography variant="subtitle2" color="text.secondary">
+                  Verified Email
+                </Typography>
+                <Typography variant="body1" fontWeight={500}>
+                  {formData.email}
+                </Typography>
+              </Box>
+
               <Grid container spacing={4}>
-                <Grid size={{ xs: 12, md: 6 }}>
+                <Grid item xs={12} md={6}>
                   <TextField
                     label="Full Name"
                     fullWidth
@@ -282,12 +358,19 @@ const ClubRegistration: React.FC = () => {
                     onChange={handleInputChange}
                     error={!!formErrors.fullName}
                     helperText={formErrors.fullName}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PersonIcon />
+                        </InputAdornment>
+                      ),
+                    }}
                   />
+
                   <TextField
                     label="Grade & Section"
                     fullWidth
                     required
-                    sx={{ mt: 3 }}
                     name="gradeSection"
                     value={formData.gradeSection}
                     onChange={handleInputChange}
@@ -295,25 +378,63 @@ const ClubRegistration: React.FC = () => {
                     helperText={
                       formErrors.gradeSection || "e.g., Grade 10 - Humility"
                     }
+                    sx={{ mt: 3 }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <SchoolIcon />
+                        </InputAdornment>
+                      ),
+                    }}
                   />
+
+                  <TextField
+                    label="Learner Reference Number (LRN)"
+                    fullWidth
+                    required
+                    name="lrn"
+                    value={formData.lrn}
+                    onChange={handleInputChange}
+                    error={!!formErrors.lrn}
+                    helperText={
+                      formErrors.lrn || "12-digit LRN (e.g., 123456789012)"
+                    }
+                    sx={{ mt: 3 }}
+                    inputProps={{ maxLength: 12 }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <BadgeIcon />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+
                   <TextField
                     label="Contact Number"
                     fullWidth
                     required
-                    sx={{ mt: 3 }}
                     name="contactNumber"
                     value={formData.contactNumber}
                     onChange={handleInputChange}
                     error={!!formErrors.contactNumber}
-                    helperText={formErrors.contactNumber}
+                    helperText={formErrors.contactNumber || "09XX-XXX-XXXX"}
                     type="tel"
+                    sx={{ mt: 3 }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PhoneIcon />
+                        </InputAdornment>
+                      ),
+                    }}
                   />
 
                   <FormControl
                     fullWidth
                     required
-                    sx={{ mt: 3 }}
                     error={!!formErrors.club}
+                    sx={{ mt: 3 }}
                   >
                     <InputLabel>Club to Join</InputLabel>
                     <Select
@@ -342,16 +463,23 @@ const ClubRegistration: React.FC = () => {
                 </Grid>
 
                 {selectedClub && selectedClubData && (
-                  <Grid size={{ xs: 12, md: 6 }}>
+                  <Grid item xs={12} md={6}>
                     <Card
                       elevation={8}
-                      sx={{ height: "100%", borderRadius: 4 }}
+                      sx={{
+                        height: "100%",
+                        borderRadius: 3,
+                        overflow: "hidden",
+                      }}
                     >
                       <CardMedia
                         component="img"
                         image={selectedClubData.img}
                         alt={selectedClubData.label}
-                        sx={{ height: 300, objectFit: "cover" }}
+                        sx={{
+                          height: { xs: 220, md: 280 },
+                          objectFit: "cover",
+                        }}
                       />
                       <CardContent>
                         <Typography
@@ -361,7 +489,11 @@ const ClubRegistration: React.FC = () => {
                         >
                           {selectedClubData.label}
                         </Typography>
-                        <Typography variant="body1" color="text.secondary">
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mt: 1 }}
+                        >
                           {selectedClubData.desc}
                         </Typography>
                       </CardContent>
@@ -370,38 +502,116 @@ const ClubRegistration: React.FC = () => {
                 )}
               </Grid>
 
+              {submitError && (
+                <Alert severity="error" sx={{ mt: 3 }}>
+                  {submitError}
+                </Alert>
+              )}
+
               <Button
                 type="submit"
                 variant="contained"
                 color="primary"
                 size="large"
                 fullWidth
+                disabled={isSubmitting}
                 sx={{
-                  mt: 8,
+                  mt: 6,
                   py: 2,
                   fontSize: "1.2rem",
                   fontWeight: "bold",
                   borderRadius: 50,
                   boxShadow: "0 8px 20px rgba(30,58,138,0.3)",
-                  "&:hover": { boxShadow: "0 12px 30px rgba(30,58,138,0.4)" },
                 }}
               >
-                Complete Registration
+                {isSubmitting ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Submit Application"
+                )}
               </Button>
             </Box>
           )}
 
-          {step === 2 && (
-            <Alert severity="success" sx={{ mt: 4, p: 4, fontSize: "1.2rem" }}>
-              <Typography variant="h6" fontWeight="bold">
-                Registration Successful!
-              </Typography>
-              <Typography>
-                Thank you, {formData.fullName}! You've successfully registered
-                for the {selectedClubData?.label}. Club advisers will contact
-                you soon.
-              </Typography>
-            </Alert>
+          {/* STEP 3: PENDING REVIEW (Updated Message) */}
+          {step === 2 && selectedClubData && (
+            <Box sx={{ textAlign: "center", maxWidth: 600, mx: "auto" }}>
+              <Alert
+                severity="info" // Blue/info para malinaw na pending pa
+                icon={false}
+                sx={{
+                  p: 5,
+                  borderRadius: 3,
+                  bgcolor: "#e3f2fd",
+                  border: "1px solid #90caf9",
+                }}
+              >
+                <Typography variant="h5" fontWeight="bold" gutterBottom>
+                  Application Submitted!
+                </Typography>
+
+                <Divider sx={{ my: 3, width: "60%", mx: "auto" }} />
+
+                <Box sx={{ my: 3 }}>
+                  <Typography variant="h6" color="text.primary">
+                    Thank you, <strong>{formData.fullName}</strong>!
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{ mt: 1 }}
+                  >
+                    Your application to join
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    color="primary"
+                    fontWeight="bold"
+                    sx={{ mt: 1 }}
+                  >
+                    {selectedClubData.label}
+                  </Typography>
+                  <Typography
+                    variant="h6"
+                    fontWeight="bold"
+                    color="warning.main"
+                    sx={{ mt: 2 }}
+                  >
+                    Status: Pending Review
+                  </Typography>
+                </Box>
+
+                <Box sx={{ my: 3, p: 2, bgcolor: "white", borderRadius: 2 }}>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    Your Details
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    Email: {formData.email}
+                  </Typography>
+                  <Typography variant="body1" fontWeight={500}>
+                    LRN: {formData.lrn}
+                  </Typography>
+                </Box>
+
+                <Typography
+                  variant="body1"
+                  color="text.secondary"
+                  sx={{ mt: 2 }}
+                >
+                  The club adviser will review your application soon. You will
+                  receive an email notification once your application is
+                  approved or if further information is needed.
+                </Typography>
+
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ mt: 3, fontStyle: "italic" }}
+                >
+                  Thank you for your patience!
+                </Typography>
+              </Alert>
+            </Box>
           )}
         </Paper>
       </Container>

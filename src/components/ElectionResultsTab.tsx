@@ -136,8 +136,8 @@ export const ElectionResultsTab: React.FC = () => {
         if (res.status === 404) {
           throw new Error(
             selectedPeriod === "current"
-              ? "Botohan pa ongoing o wala pang opisyal na resulta"
-              : "Walang naitalang resulta para sa election na ito"
+              ? " voting is ongoing."
+              : "No results have been recorded for this election."
           );
         }
         throw new Error("Hindi ma-load ang resulta");
@@ -488,8 +488,8 @@ export const ElectionResultsTab: React.FC = () => {
             sx={{ mt: 1, maxWidth: 600, mx: "auto" }}
           >
             {isCurrent
-              ? "Ang opisyal na resulta ay ipapahayag pagkatapos ng botohan at pag-audit."
-              : "Walang datos na naitala para sa napiling election period."}
+              ? "result will show after voting ended"
+              : "no data or empty eleceted officer for this elecetion period."}
           </Typography>
         </Paper>
       ) : (

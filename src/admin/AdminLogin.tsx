@@ -36,8 +36,8 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
         email === "admin@juliaortizluisnhs.deped.gov.ph" &&
         password === "admin123"
       ) {
-        onLogin(); // ← Sets localStorage & auth state in App.tsx
-        navigate("/admin"); // ← Directly redirect to /admin dashboard
+        onLogin(); 
+        navigate("/admin");
       } else {
         setError("Invalid email or password.");
         setIsLoading(false);

@@ -21,12 +21,12 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { Sidebar } from "../components/Sidebar";
 import { OverviewTab } from "../components/OverviewTab";
 import { VotingMonitorTab } from "../components/VotingMonitorTab";
-import { ClubRegistrationsTab } from "../components/ClubRegistrationsTab";
+
+import ClubRegistrationsTab from "../components/ClubRegistrationsTab";
 import { AnnouncementsTab } from "../components/AnnouncementsTab";
 import { ElectionControlTab } from "../components/ElectionControlTab";
 import { ElectionResultsTab } from "../components/ElectionResultsTab";
 import VoteHistory from "../components/VoteHistory";
-
 const API_BASE = "https://jolnhsweb.onrender.com/api";
 
 interface AdminDashboardProps {
@@ -235,7 +235,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         }}
       >
         <Container maxWidth="xl">
-          <Typography
+          {/* <Typography
             variant="h3"
             fontWeight="bold"
             color="#1e3a8a"
@@ -245,9 +245,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             Admin Dashboard
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 5 }}>
-            Real-time monitoring ng election, club registrations, announcements
-            at kontrol sa botohan.
-          </Typography>
+            Real-time monitoring of election, club registrations, announcements
+            and election control.
+          </Typography> */}
 
           {error && (
             <Alert severity="error" sx={{ mb: 4 }}>
@@ -342,7 +342,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
             {!recentWinners && !electionStatus.isVotingActive && (
               <Alert severity="info" sx={{ mt: 6 }}>
-                Walang naitalang resulta pa mula sa nakaraang election.
+                No results have been recorded yet from the previous election.
               </Alert>
             )}
           </TabPanel>

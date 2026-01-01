@@ -162,7 +162,7 @@ const Navbar: React.FC = () => {
               ))}
 
               {/* Modernized Admin Login Button */}
-              <Button
+              {/* <Button
                 component={Link}
                 to={adminItem.path}
                 variant="outlined"
@@ -190,7 +190,7 @@ const Navbar: React.FC = () => {
                 }}
               >
                 Admin
-              </Button>
+              </Button> */}
             </Box>
           )}
         </Toolbar>

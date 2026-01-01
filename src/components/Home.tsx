@@ -74,8 +74,7 @@ const Home: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
- 
-  const heroImage = "public/bg.jfif"; 
+  const heroImage = "public/bg.jfif";
 
   return (
     <>
