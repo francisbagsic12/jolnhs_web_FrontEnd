@@ -129,13 +129,13 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
             </Button>
           </Box>
 
-          <Typography
+          {/* <Typography
             variant="caption"
             color="text.secondary"
             sx={{ mt: 3, display: "block" }}
           >
             Test credentials: admin@juliaortizluisnhs.deped.gov.ph / admin123
-          </Typography>
+          </Typography> */}
         </Paper>
       </Container>
     </Box>

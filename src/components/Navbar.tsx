@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import SchoolIcon from "@mui/icons-material/School";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined"; // ← Added for admin/security feel
 import { Link, useLocation } from "react-router-dom";
 
 const Navbar: React.FC = () => {
@@ -33,6 +34,8 @@ const Navbar: React.FC = () => {
     { text: "Join a Club", path: "/register-club" },
   ];
 
+  const adminItem = { text: "Admin Login", path: "/admin-login" };
+
   const drawer = (
     <List>
       {menuItems.map((item) => (
@@ -47,6 +50,28 @@ const Navbar: React.FC = () => {
           </ListItemButton>
         </ListItem>
       ))}
+      {/* Highlighted Admin Login sa mobile drawer */}
+      <ListItem
+        disablePadding
+        sx={{ mt: 1, borderTop: "1px solid rgba(255,255,255,0.15)" }}
+      >
+        <ListItemButton
+          component={Link}
+          to={adminItem.path}
+          onClick={handleDrawerToggle}
+          selected={location.pathname === adminItem.path}
+          sx={{
+            bgcolor:
+              location.pathname === adminItem.path
+                ? "rgba(255,255,255,0.15)"
+                : "transparent",
+            "&:hover": { bgcolor: "rgba(255,255,255,0.25)" },
+          }}
+        >
+          <LockOutlinedIcon sx={{ mr: 2, color: "white" }} fontSize="small" />
+          <ListItemText primary={adminItem.text} />
+        </ListItemButton>
+      </ListItem>
     </List>
   );
 
@@ -54,7 +79,7 @@ const Navbar: React.FC = () => {
     <>
       <AppBar
         position="sticky"
-        elevation={isMobile ? 4 : 0} // No shadow on desktop for floating feel
+        elevation={isMobile ? 4 : 0}
         sx={{
           bgcolor: isMobile ? "primary.main" : "transparent",
           backdropFilter: isMobile ? "none" : "blur(20px)",
@@ -99,7 +124,7 @@ const Navbar: React.FC = () => {
               <MenuIcon />
             </IconButton>
           ) : (
-            <Box sx={{ display: "flex", gap: 2 }}>
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
               {menuItems.map((item) => (
                 <Button
                   key={item.text}
@@ -110,12 +135,12 @@ const Navbar: React.FC = () => {
                     location.pathname === item.path ? "contained" : "text"
                   }
                   sx={{
-                    px: 4,
-                    py: 1.5,
+                    px: 3, // Slightly smaller padding
+                    py: 1.2,
                     borderRadius: 50,
                     fontWeight: "medium",
                     textTransform: "none",
-                    fontSize: "1.1rem",
+                    fontSize: "1rem",
                     boxShadow:
                       location.pathname === item.path
                         ? "0 6px 20px rgba(30,58,138,0.3)"
@@ -124,17 +149,48 @@ const Navbar: React.FC = () => {
                       bgcolor:
                         location.pathname === item.path
                           ? "primary.dark"
-                          : "rgba(9, 10, 10, 0.08)",
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 8px 25px rgba(30,58,138,0.2)",
+                          : "rgba(255,255,255,0.12)",
+                      transform: "translateY(-2px) scale(1.05)",
+                      boxShadow: "0 8px 25px rgba(30,58,138,0.25)",
                     },
-                    transition: "all 0.3s ease",
+                    transition: "all 0.25s ease",
                     color: "white",
                   }}
                 >
                   {item.text}
                 </Button>
               ))}
+
+              {/* Modernized Admin Login Button */}
+              <Button
+                component={Link}
+                to={adminItem.path}
+                variant="outlined"
+                startIcon={<LockOutlinedIcon />}
+                sx={{
+                  px: 3,
+                  py: 1.2,
+                  borderRadius: 50,
+                  fontWeight: "medium",
+                  textTransform: "none",
+                  fontSize: "1rem",
+                  color: "white",
+                  borderColor: "rgba(255,255,255,0.7)",
+                  borderWidth: 1.5,
+                  backdropFilter: "blur(8px)",
+                  backgroundColor: "rgba(255,255,255,0.08)",
+                  boxShadow: "0 4px 15px rgba(0,0,0,0.15)",
+                  "&:hover": {
+                    backgroundColor: "rgba(255,255,255,0.18)",
+                    borderColor: "white",
+                    transform: "translateY(-2px) scale(1.05)",
+                    boxShadow: "0 8px 25px rgba(255,255,255,0.2)",
+                  },
+                  transition: "all 0.25s ease",
+                }}
+              >
+                Admin
+              </Button>
             </Box>
           )}
         </Toolbar>
