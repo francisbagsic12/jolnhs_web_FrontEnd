@@ -10,23 +10,24 @@ import {
   Alert,
   Button,
   Paper,
-  Grid as Grid,
+  Grid,
   Card,
   CardContent,
   Divider,
   Chip,
+  alpha,
 } from "@mui/material";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 
 import { Sidebar } from "../components/Sidebar";
-import { OverviewTab } from "../components/OverviewTab";
+import OverviewTab from "../components/OverviewTab";
 import { VotingMonitorTab } from "../components/VotingMonitorTab";
-
 import ClubRegistrationsTab from "../components/ClubRegistrationsTab";
 import { AnnouncementsTab } from "../components/AnnouncementsTab";
 import { ElectionControlTab } from "../components/ElectionControlTab";
 import { ElectionResultsTab } from "../components/ElectionResultsTab";
 import VoteHistory from "../components/VoteHistory";
+
 const API_BASE = "https://jolnhsweb.onrender.com/api";
 
 interface AdminDashboardProps {
@@ -81,6 +82,16 @@ const positionOrder = [
   "PeaceOfficer",
 ] as const;
 
+const positionLabels: Record<string, string> = {
+  President: "President",
+  VicePresident: "Vice President",
+  Secretary: "Secretary",
+  Treasurer: "Treasurer",
+  Auditor: "Auditor",
+  PIO: "P.I.O.",
+  PeaceOfficer: "Peace Officer",
+};
+
 const TabPanel: React.FC<{
   children?: React.ReactNode;
   index: number;
@@ -131,7 +142,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  // Fetch all necessary data
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
@@ -144,7 +154,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         setElectionStatus(statusData);
       }
 
-      // 2. Voting Stats (current/latest)
+      // 2. Voting Stats
       const votingRes = await fetch(`${API_BASE}/admin/dashboard-voting-stats`);
       if (votingRes.ok) {
         const votingData = await votingRes.json();
@@ -160,12 +170,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         setRegistrationStats(regData);
       }
 
-      // 4. Most Recent Winners (palaging kunin ang latest mula sa Winner collection)
-      // Gagamitin natin ang /api/admin/winners para sa current o pinakabagong
+      // 4. Most Recent Winners (hierarchical order)
       const winnersRes = await fetch(`${API_BASE}/admin/winners`);
       if (winnersRes.ok) {
         const winnersData = await winnersRes.json();
         if (winnersData.winners?.length > 0) {
+          // Sort winners based on position hierarchy
+          const sortedWinners = [...winnersData.winners].sort((a, b) => {
+            const aIndex = positionOrder.findIndex(
+              (pos) =>
+                positionLabels[pos].toLowerCase() ===
+                a.positionLabel.toLowerCase()
+            );
+            const bIndex = positionOrder.findIndex(
+              (pos) =>
+                positionLabels[pos].toLowerCase() ===
+                b.positionLabel.toLowerCase()
+            );
+            return aIndex - bIndex; // Lower index = higher position
+          });
+
           setRecentWinners({
             electionTitle: winnersData.electionTitle || "Most Recent Election",
             completedAt: winnersData.completedAt
@@ -174,7 +198,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                   month: "long",
                 })
               : undefined,
-            winners: winnersData.winners,
+            winners: sortedWinners,
             totalVotes: winnersData.totalVotes,
           });
         }
@@ -235,20 +259,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
         }}
       >
         <Container maxWidth="xl">
-          {/* <Typography
-            variant="h3"
-            fontWeight="bold"
-            color="#1e3a8a"
-            gutterBottom
-            sx={{ mt: { xs: 8, md: 0 } }}
-          >
-            Admin Dashboard
-          </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 5 }}>
-            Real-time monitoring of election, club registrations, announcements
-            and election control.
-          </Typography> */}
-
           {error && (
             <Alert severity="error" sx={{ mb: 4 }}>
               {error} —{" "}
@@ -260,94 +270,169 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
           {/* Tab Panels */}
           <TabPanel value={tabValue} index={0}>
-            <OverviewTab
-              votingStats={votingStats}
-              registrationStats={registrationStats}
-              isExporting={isExporting}
-              handleExport={handleExport}
-            />
+            <OverviewTab />
 
-            {/* === MOST RECENT ELECTED OFFICERS (Palaging makikita) === */}
+            {/* === HIERARCHICAL MOST RECENT ELECTED OFFICERS === */}
             {recentWinners && recentWinners.winners.length > 0 && (
               <Paper
-                elevation={6}
+                elevation={8}
                 sx={{
-                  mt: 6,
-                  p: 4,
-                  borderRadius: 3,
-                  bgcolor: "#fff",
+                  mt: 8,
+                  p: 5,
+                  borderRadius: 4,
+                  bgcolor: "rgba(255,255,255,0.95)",
+                  boxShadow: "0 10px 40px rgba(30,58,138,0.2)",
+                  position: "relative",
+                  overflow: "hidden",
                 }}
               >
+                {/* Background subtle gradient */}
                 <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}
-                >
-                  <EmojiEventsIcon sx={{ fontSize: 40, color: "#1e3a8a" }} />
-                  <Typography variant="h5" fontWeight="bold" color="#1e3a8a">
-                    Most Recent Elected Officers ({recentWinners.electionTitle})
-                    {recentWinners.completedAt &&
-                      ` - ${recentWinners.completedAt}`}
-                  </Typography>
-                </Box>
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    background:
+                      "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
+                    opacity: 0.6,
+                    zIndex: 0,
+                  }}
+                />
 
-                <Divider sx={{ mb: 4 }} />
+                <Box sx={{ position: "relative", zIndex: 1 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 2,
+                      mb: 5,
+                      pb: 3,
+                      borderBottom: "3px solid #1e3a8a",
+                    }}
+                  >
+                    <EmojiEventsIcon sx={{ fontSize: 48, color: "#1e3a8a" }} />
+                    <Box>
+                      <Typography
+                        variant="h4"
+                        fontWeight="bold"
+                        color="#1e3a8a"
+                      >
+                        Elected Officers
+                      </Typography>
+                      <Typography variant="subtitle1" color="text.secondary">
+                        {recentWinners.electionTitle}
+                        {recentWinners.completedAt &&
+                          ` • ${recentWinners.completedAt}`}
+                      </Typography>
+                    </Box>
+                  </Box>
 
-                <Grid container spacing={3}>
-                  {positionOrder.map((posKey) => {
-                    const winner = recentWinners.winners.find((w) =>
-                      w.positionLabel
-                        .toLowerCase()
-                        .includes(posKey.toLowerCase())
-                    );
-                    if (!winner) return null;
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 4,
+                      alignItems: "center",
+                    }}
+                  >
+                    {positionOrder.map((posKey, index) => {
+                      const winner = recentWinners.winners.find((w) =>
+                        w.positionLabel
+                          .toLowerCase()
+                          .includes(posKey.toLowerCase())
+                      );
 
-                    return (
-                      <Grid size={{ xs: 12, sm: 6, md: 4 }} key={posKey}>
-                        <Card sx={{ height: "100%", borderRadius: 3 }}>
-                          <CardContent sx={{ textAlign: "center" }}>
-                            <Typography
-                              variant="h6"
-                              fontWeight="bold"
-                              color="#1e3a8a"
-                              gutterBottom
-                            >
-                              {winner.positionLabel}
-                            </Typography>
-                            <Typography variant="h5" fontWeight="bold">
-                              {winner.winnerName}
-                            </Typography>
-                            <Chip
-                              label={winner.winnerTeam || "Independent"}
-                              size="medium"
-                              color="primary"
-                              variant="outlined"
-                              sx={{ mt: 2 }}
+                      if (!winner) return null;
+
+                      const isTop = index === 0 || index === 1; // President & VP bigger
+
+                      return (
+                        <React.Fragment key={posKey}>
+                          {/* Connector line (except first) */}
+                          {index > 0 && (
+                            <Box
+                              sx={{
+                                width: 4,
+                                height: 40,
+                                bgcolor: alpha("#1e3a8a", 0.4),
+                                borderRadius: 2,
+                              }}
                             />
-                            {winner.votes && (
+                          )}
+
+                          <Card
+                            elevation={isTop ? 10 : 4}
+                            sx={{
+                              width: isTop ? { xs: "100%", md: "80%" } : "100%",
+                              maxWidth: 700,
+                              borderRadius: 4,
+                              border: `2px solid ${
+                                isTop ? "#1e3a8a" : alpha("#1e3a8a", 0.3)
+                              }`,
+                              bgcolor: isTop ? "#f0f7ff" : "white",
+                              transition: "all 0.3s",
+                              "&:hover": {
+                                transform: "translateY(-8px)",
+                                boxShadow: isTop
+                                  ? "0 20px 60px rgba(30,58,138,0.3)"
+                                  : "0 10px 30px rgba(0,0,0,0.15)",
+                              },
+                            }}
+                          >
+                            <CardContent sx={{ p: 4, textAlign: "center" }}>
                               <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{ mt: 1 }}
+                                variant={isTop ? "h4" : "h5"}
+                                fontWeight="bold"
+                                color="#1e3a8a"
+                                gutterBottom
                               >
-                                {winner.votes} votes • {winner.percentage}%
+                                {winner.positionLabel}
                               </Typography>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                    );
-                  })}
-                </Grid>
+
+                              <Typography
+                                variant={isTop ? "h3" : "h5"}
+                                fontWeight="900"
+                                color="text.primary"
+                                sx={{ mb: 1 }}
+                              >
+                                {winner.winnerName}
+                              </Typography>
+
+                              <Chip
+                                label={winner.winnerTeam || "Independent"}
+                                size="medium"
+                                color="primary"
+                                variant="outlined"
+                                sx={{ mb: 2, fontWeight: "bold" }}
+                              />
+
+                              {winner.votes && winner.percentage && (
+                                <Box sx={{ mt: 2 }}>
+                                  <Typography
+                                    variant="body1"
+                                    color="text.secondary"
+                                  >
+                                    {winner.votes} votes • {winner.percentage}%
+                                  </Typography>
+                                </Box>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </React.Fragment>
+                      );
+                    })}
+                  </Box>
+                </Box>
               </Paper>
             )}
 
             {!recentWinners && !electionStatus.isVotingActive && (
               <Alert severity="info" sx={{ mt: 6 }}>
-                No results have been recorded yet from the previous election.
+                No election results have been recorded yet.
               </Alert>
             )}
           </TabPanel>
 
-          {/* Iba pang tabs... */}
+          {/* Other tabs remain the same */}
           <TabPanel value={tabValue} index={1}>
             <VotingMonitorTab />
           </TabPanel>

@@ -73,7 +73,7 @@ const Vote: React.FC = () => {
 
   const steps = ["Pag-verify", "Pagboto", "Kumpirmasyon"];
 
-  const BACKEND_URL = "https://jolnhsweb.onrender.com/api";
+  const BACKEND_URL = "http://localhost:5000/api";
 
   // =============================================
   //  Fetch election status (mas madalas na check)
