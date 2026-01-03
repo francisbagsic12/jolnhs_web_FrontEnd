@@ -43,14 +43,13 @@ import {
 } from "docx";
 import { saveAs } from "file-saver";
 
-const API_BASE = "https://jolnhsweb.onrender.com/api";
-
+const API_BASE = "http://localhost:5000/api";
 interface ElectionPeriod {
   id: string;
   label: string;
   date: string;
+  startDate?: string;
 }
-
 interface Winner {
   position: string;
   positionLabel: string;
@@ -420,7 +419,7 @@ export const ElectionResultsTab: React.FC = () => {
                   <MenuItem value="current">Current / Latest Election</MenuItem>
                   {periods.map((p) => (
                     <MenuItem key={p.id} value={p.id}>
-                      {p.label} ({p.date})
+                      {p.label} — Started: {p.date}
                     </MenuItem>
                   ))}
                 </Select>

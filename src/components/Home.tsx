@@ -1,3 +1,4 @@
+// src/pages/Home.tsx
 import React, { useState, useEffect } from "react";
 import {
   Container,
@@ -8,21 +9,25 @@ import {
   Card,
   CardContent,
   CardMedia,
-  List,
-  ListItem,
-  ListItemText,
   Paper,
   Fab,
   useTheme,
   useMediaQuery,
+  Alert,
+  Skeleton,
+  Chip,
 } from "@mui/material";
 import SchoolIcon from "@mui/icons-material/School";
+import CampaignIcon from "@mui/icons-material/Campaign";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Scroll to Top Button
+const API_BASE = "https://jolnhsweb.onrender.com/api";
+
+// Scroll to Top Button (unchanged)
 const ScrollTopButton: React.FC = () => {
   const [visible, setVisible] = useState(false);
 
@@ -63,10 +68,37 @@ const ScrollTopButton: React.FC = () => {
   );
 };
 
+// Position order & labels (unchanged)
+const positionOrder = [
+  "President",
+  "VicePresident",
+  "Secretary",
+  "Treasurer",
+  "Auditor",
+  "PIO",
+  "PeaceOfficer",
+] as const;
+
+const positionLabels: Record<string, string> = {
+  President: "President",
+  VicePresident: "Vice President",
+  Secretary: "Secretary",
+  Treasurer: "Treasurer",
+  Auditor: "Auditor",
+  PIO: "P.I.O.",
+  PeaceOfficer: "Peace Officer",
+};
+
 const Home: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const [loadingClubs, setLoadingClubs] = useState(true);
   const [showScrollDown, setShowScrollDown] = useState(true);
+  const [loadingOfficers, setLoadingOfficers] = useState(true);
+  const [loadingAnnouncement, setLoadingAnnouncement] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [recentWinners, setRecentWinners] = useState<any>(null);
+  const [announcement, setAnnouncement] = useState<string>("");
 
   useEffect(() => {
     const handleScroll = () => setShowScrollDown(window.scrollY < 200);
@@ -74,11 +106,91 @@ const Home: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const heroImage = "public/bg.jfif";
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setError(null);
+
+        // 1. Fetch Announcement (latest active)
+        setLoadingAnnouncement(true);
+        const annRes = await fetch(`${API_BASE}/announcement`);
+        if (annRes.ok) {
+          const annData = await annRes.json();
+          setAnnouncement(annData.text?.trim() || "");
+        }
+        setLoadingAnnouncement(false);
+
+        // 2. Fetch SSG Officers
+        setLoadingOfficers(true);
+        const winnersRes = await fetch(`${API_BASE}/admin/winners`);
+        if (!winnersRes.ok) throw new Error("Failed to load SSG officers");
+        const winnersData = await winnersRes.json();
+
+        if (winnersData.winners?.length > 0) {
+          const sorted = [...winnersData.winners].sort((a: any, b: any) => {
+            const aIdx = positionOrder.findIndex(
+              (p) =>
+                positionLabels[p].toLowerCase() ===
+                a.positionLabel.toLowerCase()
+            );
+            const bIdx = positionOrder.findIndex(
+              (p) =>
+                positionLabels[p].toLowerCase() ===
+                b.positionLabel.toLowerCase()
+            );
+            return aIdx - bIdx;
+          });
+          setRecentWinners({ ...winnersData, winners: sorted });
+        }
+        setLoadingOfficers(false);
+        setLoadingClubs(false);
+      } catch (err: any) {
+        setError(err.message || "Failed to load data");
+        console.error("Home fetch error:", err);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const heroImage = "public/bg.jfif"; // Make sure this file exists
+
+  const clubs = [
+    {
+      name: "Sports Club",
+      desc: "Develop strength, teamwork, and sportsmanship through basketball, volleyball, and athletics.",
+      img: "https://www.dailybreeze.com/wp-content/uploads/2023/07/LDN-L-LEAGUE-0702-1.jpg",
+    },
+    {
+      name: "Torch Club",
+      desc: "Cultivate leadership and community service with meaningful projects and initiatives.",
+      img: "https://redcross.org.ph/wp-content/uploads/2018/07/IMG_9770.jpg",
+    },
+    {
+      name: "Tanglaw Club",
+      desc: "Nurture spiritual growth and values formation through guidance activities.",
+      img: "https://i.ytimg.com/vi/gzyEt6_7vz4/maxresdefault.jpg",
+    },
+    {
+      name: "Art Club",
+      desc: "Unleash creativity through drawing, painting, crafts, and artistic expression.",
+      img: "https://tse3.mm.bing.net/th/id/OIP.JnyW-U-YDqnduvPITZZmoQHaGX?rs=1&pid=ImgDetMain&o=7&rm=3",
+    },
+    {
+      name: "Dance Troupe",
+      desc: "Master folk, modern, and contemporary dance for performances and cultural events.",
+      img: "https://npr.brightspotcdn.com/e9/c1/5cf95b654e47898837038e79bd91/img-7614.jpg",
+    },
+    {
+      name: "Banda Club",
+      desc: "Excel in marching band, drum corps, and musical performances.",
+      img: "https://i.ytimg.com/vi/ju-of1DxZzo/maxresdefault.jpg",
+    },
+  ];
 
   return (
     <>
-      {/* Hero Section - Clean, Modern, Responsive */}
+      {/* Hero Section */}
       <Box
         sx={{
           position: "relative",
@@ -89,53 +201,40 @@ const Home: React.FC = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          overflow: "hidden",
         }}
       >
-        {/* Darker overlay for better text readability */}
         <Box
-          sx={{
-            position: "absolute",
-            inset: 0,
-            bgcolor: "rgba(0, 0, 0, 0.5)",
-          }}
+          sx={{ position: "absolute", inset: 0, bgcolor: "rgba(0,0,0,0.55)" }}
         />
-
-        {/* Hero Content */}
         <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1 }}
-          >
-            <Box textAlign="center" color="white">
-              <SchoolIcon sx={{ fontSize: { xs: 60, md: 100 }, mb: 3 }} />
-              <Typography
-                variant={isMobile ? "h4" : "h2"}
-                component="h1"
-                fontWeight="bold"
-                gutterBottom
-                sx={{ textShadow: "0 4px 12px rgba(0,0,0,0.6)" }}
-              >
-                Julia Ortiz Luis National High School
-              </Typography>
-              <Typography
-                variant={isMobile ? "body1" : "h6"}
-                sx={{
-                  maxWidth: "900px",
-                  mx: "auto",
-                  mb: 6,
-                  lineHeight: 1.8,
-                  fontStyle: "italic",
-                  textShadow: "0 2px 8px rgba(0,0,0,0.6)",
-                }}
-              >
-                A public secondary institution committed to quality, inclusive
-                education in a safe and supportive environment, nurturing
-                academically competent and values-driven learners.
-              </Typography>
-            </Box>
-          </motion.div>
+          <Box textAlign="center" color="white">
+            <SchoolIcon
+              sx={{ fontSize: { xs: 80, md: 120 }, mb: 3, color: "#60a5fa" }}
+            />
+            <Typography
+              variant={isMobile ? "h4" : "h2"}
+              component="h1"
+              fontWeight="bold"
+              gutterBottom
+              sx={{ textShadow: "0 4px 12px rgba(0,0,0,0.7)" }}
+            >
+              Julia Ortiz Luis National High School
+            </Typography>
+            <Typography
+              variant={isMobile ? "body1" : "h6"}
+              sx={{
+                maxWidth: "900px",
+                mx: "auto",
+                mb: 6,
+                lineHeight: 1.8,
+                fontStyle: "italic",
+                textShadow: "0 2px 8px rgba(0,0,0,0.7)",
+              }}
+            >
+              Committed to quality, inclusive education in a safe environment,
+              nurturing competent and values-driven learners.
+            </Typography>
+          </Box>
         </Container>
 
         {/* Scroll Down Indicator */}
@@ -148,18 +247,12 @@ const Home: React.FC = () => {
               transition={{ repeat: Infinity, duration: 2 }}
               style={{
                 position: "absolute",
-                bottom: isMobile ? 30 : 60,
+                bottom: isMobile ? 40 : 80,
                 left: "50%",
                 transform: "translateX(-50%)",
               }}
             >
-              <Typography
-                variant="body2"
-                color="white"
-                align="center"
-                fontWeight="bold"
-                mb={1}
-              >
+              <Typography variant="body2" color="white" fontWeight="bold">
                 Scroll to explore
               </Typography>
               <KeyboardArrowDownIcon sx={{ fontSize: 48, color: "white" }} />
@@ -168,275 +261,503 @@ const Home: React.FC = () => {
         </AnimatePresence>
       </Box>
 
-      <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
-        {/* Important Announcement */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-        >
-          <Paper
-            elevation={12}
-            sx={{
-              p: { xs: 4, md: 8 },
-              borderRadius: 4,
-              background: "linear-gradient(135deg, #1e40af 0%, #3b82f6 100%)",
-              color: "white",
-              textAlign: "center",
-            }}
+      {/* === NEW: Announcement Banner (User-Friendly & Beautiful) === */}
+      <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
+        {loadingAnnouncement ? (
+          <Skeleton
+            variant="rectangular"
+            height={120}
+            sx={{ borderRadius: 3, mb: 6 }}
+          />
+        ) : announcement ? (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
           >
-            <Typography variant="h4" fontWeight="bold" gutterBottom>
-              Important Announcement
-            </Typography>
-            <Typography variant="h5" paragraph sx={{ my: 4 }}>
-              Now Accepting Incoming Senior High School Students!
-            </Typography>
-            <Typography
-              variant="body1"
-              paragraph
-              sx={{ maxWidth: "800px", mx: "auto", mb: 5 }}
-            >
-              Offering <strong>Academic</strong> and{" "}
-              <strong>Technical-Vocational-Livelihood (TVL)</strong> tracks to
-              prepare students for higher education, employment, and success.
-            </Typography>
-            <Button
-              variant="contained"
-              size="large"
+            <Paper
+              elevation={8}
               sx={{
-                bgcolor: "white",
-                color: "#1e40af",
-                fontWeight: "bold",
-                px: 6,
-                py: 2,
-                borderRadius: 8,
-                "&:hover": {
-                  bgcolor: "#f1f5f9",
-                  transform: "translateY(-3px)",
-                },
+                p: { xs: 3, md: 5 },
+                borderRadius: 4,
+                bgcolor: "linear-gradient(135deg, #fff8e1 0%, #fffde7 100%)",
+                border: "2px solid #ffb300",
+                position: "relative",
+                overflow: "hidden",
+                mb: 8,
+                boxShadow: "0 10px 40px rgba(255,179,0,0.2)",
               }}
             >
-              Contact School Office
-            </Button>
-          </Paper>
-        </motion.div>
+              {/* Subtle animated background */}
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  background:
+                    "radial-gradient(circle at 10% 20%, rgba(255,179,0,0.12) 0%, transparent 60%)",
+                  animation: "pulse 8s infinite alternate",
+                  "@keyframes pulse": {
+                    "0%": { opacity: 0.4 },
+                    "100%": { opacity: 0.8 },
+                  },
+                }}
+              />
 
-        {/* SSG Officers */}
-        <Box mt={{ xs: 10, md: 16 }}>
+              <Box
+                sx={{ position: "relative", zIndex: 1, textAlign: "center" }}
+              >
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 2,
+                    mb: 2,
+                  }}
+                >
+                  <CampaignIcon sx={{ fontSize: 40, color: "#f57c00" }} />
+                  <Typography
+                    variant="h4"
+                    fontWeight="bold"
+                    sx={{
+                      color: "#ef6c00",
+                      textShadow: "0 2px 8px rgba(239,108,0,0.2)",
+                    }}
+                  >
+                    School Announcement
+                  </Typography>
+                </Box>
+
+                <Typography
+                  variant={isMobile ? "h6" : "h5"}
+                  color="text.primary"
+                  sx={{
+                    fontWeight: 500,
+                    lineHeight: 1.6,
+                    maxWidth: "900px",
+                    mx: "auto",
+                  }}
+                >
+                  {announcement}
+                </Typography>
+              </Box>
+            </Paper>
+          </motion.div>
+        ) : null}
+      </Container>
+
+      <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }}>
+        {/* SSG Officers - Real Data */}
+        <Box mb={{ xs: 12, md: 20 }}>
           <Typography
             variant="h3"
             align="center"
             fontWeight="bold"
-            color="#1e40af"
-            gutterBottom
+            sx={{
+              background: "linear-gradient(90deg, #00d4ff, #7c3aed)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              mb: 2,
+              textShadow: "0 0 20px rgba(0,212,255,0.5)",
+            }}
           >
             Supreme Student Government (SSG)
           </Typography>
           <Typography variant="h6" align="center" color="text.secondary" mb={6}>
-            School Year 2025–2026
+            School Year 2025–2026 • Current Officers
           </Typography>
 
-          <Grid container spacing={6}>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <motion.div
-                whileHover={{ scale: 1.03 }}
-                transition={{ duration: 0.4 }}
-              >
-                <Card
-                  sx={{
-                    borderRadius: 4,
-                    overflow: "hidden",
-                    height: "100%",
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <CardMedia
-                    component="img"
-                    image="https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=455143769969094" // Keep if valid; replace with actual president photo
-                    alt="SSG President"
-                    sx={{ height: { xs: 300, md: 450 }, objectFit: "cover" }}
-                  />
-                  <CardContent
-                    sx={{
-                      bgcolor: "#1e40af",
-                      color: "white",
-                      flexGrow: 1,
-                      textAlign: "center",
-                    }}
-                  >
-                    <Typography variant="h5" fontWeight="bold">
-                      SSG President
-                    </Typography>
-                    <Typography variant="h6" mt={1}>
-                      [Name Here]
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </motion.div>
+          {loadingOfficers ? (
+            <Grid container spacing={4} justifyContent="center">
+              {[...Array(7)].map(
+                (
+                  _,
+                  i // 7 positions
+                ) => (
+                  <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={i}>
+                    <Skeleton
+                      variant="rectangular"
+                      height={280}
+                      sx={{ borderRadius: 4 }}
+                    />
+                  </Grid>
+                )
+              )}
             </Grid>
-
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Paper
-                elevation={8}
-                sx={{
-                  borderRadius: 4,
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <Box flexGrow={1} p={4}>
-                  <List>
-                    {[
-                      { role: "Vice President", name: "[Name]" },
-                      { role: "Secretary", name: "[Name]" },
-                      { role: "Treasurer", name: "[Name]" },
-                      { role: "Auditor", name: "[Name]" },
-                      { role: "Public Information Officer", name: "[Name]" },
-                      { role: "Peace Officer", name: "[Name]" },
-                    ].map((officer) => (
-                      <ListItem key={officer.role} divider>
-                        <ListItemText
-                          primary={
+          ) : error ? (
+            <Alert
+              severity="error"
+              sx={{ textAlign: "center", py: 4, maxWidth: 600, mx: "auto" }}
+            >
+              {error}
+            </Alert>
+          ) : recentWinners && recentWinners.winners?.length > 0 ? (
+            <>
+              {/* Featured President */}
+              {recentWinners.winners
+                .filter((w: any) =>
+                  w.positionLabel.toLowerCase().includes("president")
+                )
+                .slice(0, 1)
+                .map((president: any) => (
+                  <Grid
+                    container
+                    spacing={4}
+                    justifyContent="center"
+                    key="president-featured"
+                  >
+                    <Grid size={{ xs: 12, md: 10, lg: 8 }}>
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <Card
+                          elevation={12}
+                          sx={{
+                            borderRadius: 5,
+                            overflow: "hidden",
+                            border: "3px solid #1e40af",
+                            boxShadow: "0 15px 50px rgba(30,58,138,0.25)",
+                            transition: "all 0.3s ease",
+                            "&:hover": {
+                              boxShadow: "0 25px 80px rgba(30,58,138,0.4)",
+                              transform: "translateY(-8px)",
+                            },
+                          }}
+                        >
+                          <CardContent
+                            sx={{
+                              p: { xs: 5, md: 8 },
+                              bgcolor: "#f8fafc",
+                              textAlign: "center",
+                            }}
+                          >
+                            <EmojiEventsIcon
+                              sx={{
+                                fontSize: { xs: 70, md: 90 },
+                                color: "#1e40af",
+                                mb: 3,
+                              }}
+                            />
                             <Typography
-                              variant="subtitle1"
+                              variant="h4"
                               fontWeight="bold"
                               color="#1e40af"
+                              gutterBottom
                             >
-                              {officer.role}
+                              SSG President
                             </Typography>
-                          }
-                          secondary={officer.name}
-                        />
-                      </ListItem>
-                    ))}
-                  </List>
-                </Box>
-                <Box textAlign="center" p={3}>
-                  <Button
-                    variant="contained"
-                    component={Link}
-                    to="/vote"
-                    size="large"
-                    sx={{
-                      bgcolor: "#1e40af",
-                      px: 6,
-                      py: 1.8,
-                      borderRadius: 8,
-                    }}
-                  >
-                    Vote for Upcoming Elections
-                  </Button>
-                </Box>
-              </Paper>
-            </Grid>
-          </Grid>
+                            <Typography
+                              variant="h3"
+                              fontWeight="900"
+                              color="text.primary"
+                              gutterBottom
+                            >
+                              {president.winnerName}
+                            </Typography>
+                            <Chip
+                              label={president.winnerTeam || "Independent"}
+                              color="primary"
+                              size="medium"
+                              sx={{
+                                fontSize: "1.2rem",
+                                fontWeight: "bold",
+                                px: 5,
+                                py: 1.5,
+                                mb: 3,
+                              }}
+                            />
+                            {president.votes && (
+                              <Typography
+                                variant="h6"
+                                color="text.secondary"
+                                mt={2}
+                              >
+                                {president.votes.toLocaleString()} votes •{" "}
+                                {president.percentage}%
+                              </Typography>
+                            )}
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    </Grid>
+                  </Grid>
+                ))}
+
+              {/* All Other Officers - Strict Order */}
+              <Grid
+                container
+                spacing={4}
+                justifyContent="center"
+                sx={{ mt: 6 }}
+              >
+                {positionOrder
+                  .filter((pos) => pos !== "President")
+                  .map((posKey) => {
+                    const officer = recentWinners.winners.find(
+                      (w: any) =>
+                        w.positionLabel.toLowerCase() ===
+                        positionLabels[posKey].toLowerCase()
+                    );
+
+                    if (!officer) return null;
+
+                    return (
+                      <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={posKey}>
+                        <motion.div
+                          whileHover={{ y: -10 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <Card
+                            elevation={6}
+                            sx={{
+                              height: "100%",
+                              borderRadius: 4,
+                              overflow: "hidden",
+                              border: "1px solid rgba(30,58,138,0.2)",
+                              transition: "all 0.3s ease",
+                              "&:hover": {
+                                boxShadow: "0 15px 40px rgba(30,58,138,0.3)",
+                                transform: "translateY(-8px)",
+                              },
+                            }}
+                          >
+                            <CardContent
+                              sx={{
+                                p: 4,
+                                textAlign: "center",
+                                bgcolor: "#f8fafc",
+                              }}
+                            >
+                              <EmojiEventsIcon
+                                sx={{ fontSize: 40, color: "#3b82f6", mb: 2 }}
+                              />
+                              <Typography
+                                variant="h6"
+                                fontWeight="bold"
+                                color="#1e40af"
+                                gutterBottom
+                              >
+                                {officer.positionLabel}
+                              </Typography>
+                              <Typography
+                                variant="h5"
+                                fontWeight="700"
+                                color="text.primary"
+                                gutterBottom
+                              >
+                                {officer.winnerName}
+                              </Typography>
+                              <Chip
+                                label={officer.winnerTeam || "Independent"}
+                                color="primary"
+                                variant="outlined"
+                                size="small"
+                                sx={{ mb: 2 }}
+                              />
+                              {officer.votes && (
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  {officer.votes.toLocaleString()} votes •{" "}
+                                  {officer.percentage}%
+                                </Typography>
+                              )}
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      </Grid>
+                    );
+                  })}
+              </Grid>
+            </>
+          ) : (
+            <Alert
+              severity="info"
+              sx={{ textAlign: "center", py: 6, maxWidth: 800, mx: "auto" }}
+            >
+              No elected officers recorded yet for this school year.
+            </Alert>
+          )}
         </Box>
 
         {/* Clubs Section */}
-        <Box mt={{ xs: 10, md: 16 }}>
+        <Box mt={{ xs: 12, md: 20 }}>
           <Typography
             variant="h3"
             align="center"
             fontWeight="bold"
-            color="#1e40af"
-            gutterBottom
+            sx={{
+              background: "linear-gradient(90deg, #00d4ff, #7c3aed)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              mb: 2,
+              textShadow: "0 0 20px rgba(0,212,255,0.5)",
+            }}
           >
-            Join Our Vibrant Clubs!
+            Unlock Your Passion – Join Our Clubs!
+          </Typography>
+          <Typography variant="h6" align="center" color="text.secondary" mb={8}>
+            Level up your skills, make friends, and create memories!
           </Typography>
 
-          <Grid container spacing={4} mt={4}>
-            {[
-              {
-                name: "Sports Club",
-                desc: "Develop strength, teamwork, and sportsmanship through basketball, volleyball, and athletics.",
-                img: "https://www.rappler.com/tachyon/2023/05/UAAP-HSGVB-FIONNA-INOCENTES-3829.jpg",
-              },
-              {
-                name: "Torch Club",
-                desc: "Cultivate leadership and community service with meaningful projects and initiatives.",
-                img: "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=1177777421039055",
-              },
-              {
-                name: "Tanglaw Club",
-                desc: "Nurture spiritual growth and values formation through guidance activities.",
-                img: "https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=1177777387705725",
-              },
-              {
-                name: "Art Club",
-                desc: "Unleash creativity through drawing, painting, crafts, and artistic expression.",
-                img: "https://images.pexels.com/photos/159581/art-painting-brush-paint-159581.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
-              },
-              {
-                name: "Dance Troupe",
-                desc: "Master folk, modern, and contemporary dance for performances and cultural events.",
-                img: "https://www.upv.edu.ph/images/tunog-tikang3-2019.jpg",
-              },
-              {
-                name: "Drum & Lyre Corps",
-                desc: "Excel in marching band, drum corps, and musical performances.",
-                img: "https://i.ytimg.com/vi/6rLgX12Vvng/maxresdefault.jpg",
-              },
-            ].map((club) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={club.name}>
-                <motion.div
-                  whileHover={{ y: -10 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Card
-                    sx={{
-                      height: "100%",
-                      borderRadius: 4,
-                      overflow: "hidden",
-                      boxShadow: 6,
-                      transition: "box-shadow 0.3s",
-                      "&:hover": { boxShadow: 16 },
-                    }}
+          {loadingClubs ? (
+            <Grid container spacing={4}>
+              {[...Array(6)].map((_, i) => (
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
+                  <Skeleton
+                    variant="rectangular"
+                    height={340}
+                    sx={{ borderRadius: 6 }}
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Grid container spacing={4}>
+              {clubs.map((club) => (
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={club.name}>
+                  <motion.div
+                    whileHover={{ y: -15, scale: 1.04 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   >
-                    <CardMedia
-                      component="img"
-                      height="220"
-                      image={club.img}
-                      alt={club.name}
-                      sx={{ objectFit: "cover" }}
-                    />
-                    <CardContent sx={{ textAlign: "center" }}>
-                      <Typography
-                        variant="h5"
-                        fontWeight="bold"
-                        color="#1e40af"
-                        gutterBottom
-                      >
-                        {club.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {club.desc}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              </Grid>
-            ))}
-          </Grid>
+                    <Card
+                      elevation={0}
+                      sx={{
+                        height: "100%",
+                        borderRadius: 6,
+                        overflow: "hidden",
+                        position: "relative",
+                        bgcolor: "background.paper",
+                        border: "2px solid transparent",
+                        background: "linear-gradient(145deg, #1e293b, #111827)",
+                        boxShadow: "0 8px 30px rgba(0,0,0,0.4)",
+                        transition:
+                          "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                        "&:hover": {
+                          border: "2px solid #00d4ff",
+                          boxShadow: "0 25px 80px rgba(0,212,255,0.3)",
+                          transform: "translateY(-15px)",
+                        },
+                      }}
+                    >
+                      {/* Neon Glow Overlay on Hover */}
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          inset: 0,
+                          background:
+                            "linear-gradient(135deg, rgba(0,212,255,0.15) 0%, transparent 70%)",
+                          opacity: 0,
+                          transition: "opacity 0.5s",
+                          pointerEvents: "none",
+                          "&:hover": { opacity: 1 },
+                        }}
+                      />
 
-          <Box textAlign="center" mt={8}>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <CardMedia
+                        component="img"
+                        height="240"
+                        image={club.img}
+                        alt={club.name}
+                        sx={{
+                          objectFit: "cover",
+                          filter: "brightness(0.9)",
+                          transition: "all 0.4s",
+                          "&:hover": {
+                            filter: "brightness(1.1) saturate(1.2)",
+                          },
+                        }}
+                      />
+
+                      <CardContent
+                        sx={{
+                          p: 4,
+                          textAlign: "center",
+                          position: "relative",
+                          zIndex: 2,
+                        }}
+                      >
+                        <Typography
+                          variant="h5"
+                          fontWeight="bold"
+                          sx={{
+                            color: "#00d4ff",
+                            mb: 2,
+                            textShadow: "0 0 10px rgba(0,212,255,0.5)",
+                          }}
+                        >
+                          {club.name}
+                        </Typography>
+
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          mb={3}
+                          sx={{ lineHeight: 1.7 }}
+                        >
+                          {club.desc}
+                        </Typography>
+
+                        {/* Game-Style Join Button */}
+                        <motion.div
+                          whileHover={{ scale: 1.08 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Button
+                            variant="contained"
+                            size="medium"
+                            component={Link}
+                            to="/register-club"
+                            sx={{
+                              bgcolor: "#7c3aed",
+                              color: "white",
+                              fontWeight: "bold",
+                              px: 5,
+                              py: 1.2,
+                              borderRadius: 50,
+                              boxShadow: "0 0 20px rgba(124,58,237,0.5)",
+                              "&:hover": {
+                                bgcolor: "#6d28d9",
+                                boxShadow: "0 0 30px rgba(124,58,237,0.7)",
+                              },
+                            }}
+                          >
+                            Join Now
+                          </Button>
+                        </motion.div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+
+          <Box textAlign="center" mt={12}>
+            <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
               <Button
                 variant="contained"
                 size="large"
                 component={Link}
                 to="/register-club"
                 sx={{
-                  bgcolor: "#1e40af",
-                  px: 8,
-                  py: 2.5,
-                  fontSize: "1.2rem",
-                  borderRadius: 8,
+                  bgcolor: "#00d4ff",
+                  color: "#0f172a",
+                  fontWeight: "bold",
+                  fontSize: "1.4rem",
+                  px: 10,
+                  py: 2,
+                  borderRadius: 50,
+                  boxShadow: "0 0 40px rgba(0,212,255,0.5)",
+                  "&:hover": {
+                    bgcolor: "#00b8d9",
+                    boxShadow: "0 0 60px rgba(0,212,255,0.7)",
+                  },
                 }}
               >
-                Register for a Club Today!
+                Start Your Club Adventure Today!
               </Button>
             </motion.div>
           </Box>

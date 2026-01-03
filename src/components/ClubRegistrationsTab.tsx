@@ -28,7 +28,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import SearchIcon from "@mui/icons-material/Search";
-import GroupsIcon from "@mui/icons-material/Groups";
+// import GroupsIcon from "@mui/icons-material/Groups";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import EmailIcon from "@mui/icons-material/Email";
@@ -44,9 +44,9 @@ import {
   TableRow,
 } from "@mui/material";
 
-const BACKEND_URL = "http://localhost:5000";
+const BACKEND_URL = "https://jolnhsweb.onrender.com";
 
-const NeonCard = styled(Card)(({ theme }) => ({
+const NeonCard = styled(Card)(() => ({
   background: "rgba(15, 23, 42, 0.75)",
   backdropFilter: "blur(12px)",
   border: "1px solid rgba(59, 130, 246, 0.25)",
@@ -136,7 +136,7 @@ const AVAILABLE_CLUBS: Club[] = [
     value: "banda",
     label: "Banda Club",
     desc: "Drum & Lyre / Marching band",
-    img: "https://i.ytimg.com/vi/6rLgX12Vvng/maxresdefault.jpg",
+    img: "https://i.ytimg.com/vi/ju-of1DxZzo/maxresdefault.jpg",
   },
 ];
 

@@ -34,8 +34,7 @@ const About: React.FC = () => {
         sx={{
           position: "relative",
           height: { xs: "65vh", md: "85vh" },
-          backgroundImage:
-            "url('https://sa.kapamilya.com/absnews/abscbnnews/media/2022/advertorial/12/12/smclassroom3.jpg')", // Modern Philippine school building
+          backgroundImage: "url('public/bg.jfif')", // Modern Philippine school building
           backgroundSize: "cover",
           backgroundPosition: "center",
           display: "flex",
@@ -87,7 +86,7 @@ const About: React.FC = () => {
             <Card elevation={12} sx={{ borderRadius: 5, overflow: "hidden" }}>
               <CardMedia
                 component="img"
-                image="https://media.gettyimages.com/id/169832776/photo/philippines-education-school.jpg"
+                image="public/bg.jfif"
                 alt="Students during flag ceremony"
                 sx={{ height: { xs: 300, md: 450 } }}
               />
@@ -237,7 +236,7 @@ const About: React.FC = () => {
               <CardMedia
                 component="img"
                 height="220"
-                image="https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=1341457787980980"
+                image="https://images.subsplash.com/image.jpg?id=a428fc21-831f-4782-b275-552524c0c932&w=800&h=450"
                 alt="Core Values - Unity and Service"
               />
               <CardContent sx={{ textAlign: "center", p: 4 }}>

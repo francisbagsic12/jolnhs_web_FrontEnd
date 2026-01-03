@@ -21,7 +21,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { styled } from "@mui/material/styles";
 
-const BACKEND_URL = "http://localhost:5000"; // Change to production URL
+const BACKEND_URL = "https://jolnhsweb.onrender.com"; // Change to production URL
 
 // Hologram Card Style
 const HoloCard = styled(Card)(({ theme }) => ({

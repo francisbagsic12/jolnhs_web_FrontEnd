@@ -10,10 +10,8 @@ import {
   Alert,
   Button,
   Paper,
-  Grid,
   Card,
   CardContent,
-  Divider,
   Chip,
   alpha,
 } from "@mui/material";
@@ -28,7 +26,7 @@ import { ElectionControlTab } from "../components/ElectionControlTab";
 import { ElectionResultsTab } from "../components/ElectionResultsTab";
 import VoteHistory from "../components/VoteHistory";
 
-const API_BASE = "https://jolnhsweb.onrender.com/api";
+const API_BASE = "http://localhost:5000/api";
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -108,7 +106,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [votingStats, setVotingStats] = useState<VotingStats>({
+  const [_votingStats, setVotingStats] = useState<VotingStats>({
     totalVoters: 0,
     totalVotesCast: 0,
     turnoutPercentage: "0.0",
@@ -123,12 +121,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     },
   });
 
-  const [registrationStats, setRegistrationStats] = useState<RegistrationStats>(
-    {
+  const [_registrationStats, setRegistrationStats] =
+    useState<RegistrationStats>({
       totalRegistrations: 0,
       byClub: {},
-    }
-  );
+    });
 
   const [electionStatus, setElectionStatus] = useState<ElectionStatus>({
     currentElectionId: null,
@@ -137,7 +134,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
   const [recentWinners, setRecentWinners] = useState<WinnerData | null>(null);
 
-  const [isExporting, setIsExporting] = useState(false);
+  // const [isExporting, setIsExporting] = useState(false);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -215,13 +212,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     fetchDashboardData();
   }, []);
 
-  const handleExport = (type: "votes" | "registrations") => {
-    setIsExporting(true);
-    setTimeout(() => {
-      alert(`Exported ${type} data as CSV! (Demo)`);
-      setIsExporting(false);
-    }, 1500);
-  };
+  // const handleExport = (type: "votes" | "registrations") => {
+  //   setIsExporting(true);
+  //   setTimeout(() => {
+  //     alert(`Exported ${type} data as CSV! (Demo)`);
+  //     setIsExporting(false);
+  //   }, 1500);
+  // };
 
   if (loading) {
     return (
@@ -335,12 +332,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                     }}
                   >
                     {positionOrder.map((posKey, index) => {
-                      const winner = recentWinners.winners.find((w) =>
-                        w.positionLabel
-                          .toLowerCase()
-                          .includes(posKey.toLowerCase())
+                      // Gumamit ng exact match base sa positionLabel (case-insensitive)
+                      const winner = recentWinners.winners.find(
+                        (w) =>
+                          w.positionLabel.toLowerCase() ===
+                          positionLabels[posKey].toLowerCase()
                       );
 
+                      // Kung walang winner sa position na 'to, skip lang
                       if (!winner) return null;
 
                       const isTop = index === 0 || index === 1; // President & VP bigger
@@ -411,7 +410,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                                     variant="body1"
                                     color="text.secondary"
                                   >
-                                    {winner.votes} votes • {winner.percentage}%
+                                    {winner.votes.toLocaleString()} votes •{" "}
+                                    {winner.percentage}%
                                   </Typography>
                                 </Box>
                               )}

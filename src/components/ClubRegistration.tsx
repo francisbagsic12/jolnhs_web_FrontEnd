@@ -69,7 +69,7 @@ const clubs = [
   },
 ];
 
-const BACKEND_URL = "http://localhost:5000"; // Change to production URL later
+const BACKEND_URL = "https://jolnhsweb.onrender.com"; // Change to production URL later
 
 const ClubRegistration: React.FC = () => {
   const [step, setStep] = useState(0);
@@ -348,7 +348,7 @@ const ClubRegistration: React.FC = () => {
               </Box>
 
               <Grid container spacing={4}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                   <TextField
                     label="Full Name"
                     fullWidth
@@ -463,7 +463,7 @@ const ClubRegistration: React.FC = () => {
                 </Grid>
 
                 {selectedClub && selectedClubData && (
-                  <Grid item xs={12} md={6}>
+                  <Grid size={{ xs: 12, md: 6 }}>
                     <Card
                       elevation={8}
                       sx={{

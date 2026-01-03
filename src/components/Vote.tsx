@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+// src/pages/Vote.tsx
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Container,
@@ -21,6 +22,7 @@ import {
   Chip,
   useTheme,
   useMediaQuery,
+  Fade,
 } from "@mui/material";
 import EmailIcon from "@mui/icons-material/Email";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -54,10 +56,12 @@ const Vote: React.FC = () => {
     currentElectionId: string | null;
     votingStart: string | null;
     votingEnd: string | null;
+    isVotingActive: boolean;
   }>({
     currentElectionId: null,
     votingStart: null,
     votingEnd: null,
+    isVotingActive: false,
   });
 
   const [votingState, setVotingState] = useState<
@@ -66,6 +70,7 @@ const Vote: React.FC = () => {
   const [countdown, setCountdown] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasVoted, setHasVoted] = useState(false);
+  const isVotingActive = votingState === "active" && !hasVoted;
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -73,11 +78,9 @@ const Vote: React.FC = () => {
 
   const steps = ["Pag-verify", "Pagboto", "Kumpirmasyon"];
 
-  const BACKEND_URL = "http://localhost:5000/api";
+  const BACKEND_URL = "https://jolnhsweb.onrender.com/api"; // ← Change to production URL
 
-  // =============================================
-  //  Fetch election status (mas madalas na check)
-  // =============================================
+  // Fetch election status (priority: isVotingActive flag)
   useEffect(() => {
     const fetchStatus = async () => {
       try {
@@ -87,82 +90,77 @@ const Vote: React.FC = () => {
         setVotingStatus(data);
 
         const now = Date.now();
-        const start = new Date(data.votingStart).getTime();
-        const end = new Date(data.votingEnd).getTime();
+        const start = data.votingStart
+          ? new Date(data.votingStart).getTime()
+          : null;
+        const end = data.votingEnd ? new Date(data.votingEnd).getTime() : null;
 
-        if (now < start) setVotingState("upcoming");
-        else if (now <= end) setVotingState("active");
-        else setVotingState("ended");
+        // Priority: Backend flag
+        if (!data.isVotingActive) {
+          setVotingState("ended");
+          setCountdown("Tapos na ang botohan");
+        }
+        // Then fallback to date range
+        else if (start && now < start) {
+          const diff = start - now;
+          const d = Math.floor(diff / 86400000);
+          const h = Math.floor((diff % 86400000) / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+          setCountdown(
+            `Magbubukas sa: ${d > 0 ? `${d} araw ` : ""}${h
+              .toString()
+              .padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s
+              .toString()
+              .padStart(2, "0")}`
+          );
+          setVotingState("upcoming");
+        } else if (end && now <= end) {
+          const diff = end - now;
+          const d = Math.floor(diff / 86400000);
+          const h = Math.floor((diff % 86400000) / 3600000);
+          const m = Math.floor((diff % 3600000) / 60000);
+          const s = Math.floor((diff % 60000) / 1000);
+          setCountdown(
+            `Natitira: ${d > 0 ? `${d} araw ` : ""}${h
+              .toString()
+              .padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s
+              .toString()
+              .padStart(2, "0")}`
+          );
+          setVotingState("active");
+        } else {
+          setVotingState("ended");
+          setCountdown("Tapos na ang botohan");
+        }
       } catch (err) {
         console.error(err);
-        setGeneralError(
-          "Hindi makakonekta sa server. Gamit ang huling alam na status."
-        );
+        setGeneralError("Hindi makakonekta sa server...");
       }
     };
 
     fetchStatus();
-    const interval = setInterval(fetchStatus, 10000); // check every 10 seconds
+
+    // Check more frequently when active
+    const intervalTime = votingStatus.isVotingActive ? 5000 : 10000;
+    const interval = setInterval(fetchStatus, intervalTime);
+
     return () => clearInterval(interval);
-  }, []);
+  }, [votingStatus.isVotingActive]);
 
-  // =============================================
-  //  Real-time countdown & voting state
-  // =============================================
+  // Force "ended" when flag changes
   useEffect(() => {
-    if (!votingStatus.votingStart || !votingStatus.votingEnd) return;
-
-    const startTime = new Date(votingStatus.votingStart).getTime();
-    const endTime = new Date(votingStatus.votingEnd).getTime();
-
-    const update = () => {
-      const now = Date.now();
-
-      if (now < startTime) {
-        const diff = startTime - now;
-        const d = Math.floor(diff / 86400000);
-        const h = Math.floor((diff % 86400000) / 3600000);
-        const m = Math.floor((diff % 3600000) / 60000);
-        const s = Math.floor((diff % 60000) / 1000);
-
-        setCountdown(
-          `${d}d ${h.toString().padStart(2, "0")}h ${m
-            .toString()
-            .padStart(2, "0")}m ${s.toString().padStart(2, "0")}s`
-        );
-        setVotingState("upcoming");
-      } else if (now <= endTime) {
-        setCountdown("BOTOHAN NGAYON!");
-        setVotingState("active");
-      } else {
-        setCountdown("Tapos na ang botohan");
-        setVotingState("ended");
+    if (votingStatus.isVotingActive === false) {
+      setVotingState("ended");
+      setCountdown("Tapos na ang botohan");
+      if (step === 1) {
+        setGeneralError("Natapos ang botohan habang nagvo-vote ka.");
+        setStep(0);
       }
-    };
-
-    update();
-    const timer = setInterval(update, 1000);
-    return () => clearInterval(timer);
-  }, [votingStatus.votingStart, votingStatus.votingEnd]);
-
-  // Auto-detect if voting ended while user is voting
-  const checkVotingStillActive = useCallback(() => {
-    if (votingState !== "active" && step === 1) {
-      setGeneralError(
-        "Natapos na ang botohan habang ikaw ay nagvo-vote. Hindi na maipapasa ang boto."
-      );
-      setStep(0);
-      setFormData({});
-      setVerificationCode("");
-      setIsSubmitting(false);
     }
-  }, [votingState, step]);
+  }, [votingStatus.isVotingActive, step]);
 
-  useEffect(() => {
-    checkVotingStillActive();
-  }, [votingState, checkVotingStillActive]);
-
-  // Fetch candidates
+  // Fetch candidates only when active & on voting step
   useEffect(() => {
     if (step === 1 && votingState === "active") {
       const fetchCandidates = async () => {
@@ -183,11 +181,7 @@ const Vote: React.FC = () => {
     }
   }, [step, votingState]);
 
-  const isVotingActive = votingState === "active" && !hasVoted;
-
-  // =============================================
-  //  Handlers
-  // =============================================
+  // Handlers (unchanged except minor improvements)
   const handleSendVerification = async () => {
     setVerificationError("");
     setGeneralError("");
@@ -197,7 +191,7 @@ const Vote: React.FC = () => {
       return;
     }
 
-    if (!isVotingActive) {
+    if (votingState !== "active") {
       setVerificationError("Hindi na bukas ang botohan.");
       return;
     }
@@ -358,7 +352,6 @@ const Vote: React.FC = () => {
     pio: "P.I.O.",
     peaceOfficer: "Peace Officer",
   };
-
   return (
     <Box sx={{ pt: `${topOffset}px`, bgcolor: "#f5f7ff", minHeight: "100vh" }}>
       <Container maxWidth="md" sx={{ py: { xs: 5, md: 8 } }}>
@@ -374,45 +367,46 @@ const Vote: React.FC = () => {
             </Typography>
           </Box>
 
-          {/* Status Banner */}
-          <Paper
-            elevation={4}
-            sx={{
-              p: 4,
-              mb: 5,
-              borderRadius: 3,
-              bgcolor:
-                votingState === "active"
-                  ? "#e8f5e9"
-                  : votingState === "upcoming"
-                  ? "#fff3e0"
-                  : "#ffebee",
-              border: `2px solid ${
-                votingState === "active"
-                  ? "#4caf50"
-                  : votingState === "upcoming"
-                  ? "#ff9800"
-                  : "#f44336"
-              }`,
-            }}
-          >
-            <Box
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              gap={3}
+          {/* Status Banner - More Prominent */}
+          <Fade in timeout={800}>
+            <Paper
+              elevation={6}
+              sx={{
+                p: 4,
+                mb: 6,
+                borderRadius: 4,
+                bgcolor:
+                  votingState === "active"
+                    ? "#e8f5e9"
+                    : votingState === "upcoming"
+                    ? "#fff3e0"
+                    : "#ffebee",
+                border: `3px solid ${
+                  votingState === "active"
+                    ? "#4caf50"
+                    : votingState === "upcoming"
+                    ? "#ff9800"
+                    : "#f44336"
+                }`,
+                textAlign: "center",
+              }}
             >
-              {votingState === "active" && (
-                <EventIcon sx={{ fontSize: 50, color: "#4caf50" }} />
-              )}
-              {votingState === "upcoming" && (
-                <AccessTimeIcon sx={{ fontSize: 50, color: "#ff9800" }} />
-              )}
-              {votingState === "ended" && (
-                <LockIcon sx={{ fontSize: 50, color: "#f44336" }} />
-              )}
+              <Box
+                display="flex"
+                flexDirection="column"
+                alignItems="center"
+                gap={2}
+              >
+                {votingState === "active" && (
+                  <EventIcon sx={{ fontSize: 60, color: "#4caf50" }} />
+                )}
+                {votingState === "upcoming" && (
+                  <AccessTimeIcon sx={{ fontSize: 60, color: "#ff9800" }} />
+                )}
+                {votingState === "ended" && (
+                  <LockIcon sx={{ fontSize: 60, color: "#f44336" }} />
+                )}
 
-              <Box textAlign="center">
                 <Typography variant="h5" fontWeight="bold">
                   {votingState === "active"
                     ? "BUKAS ANG BOTOHAN!"
@@ -420,12 +414,13 @@ const Vote: React.FC = () => {
                     ? "Magbubukas Pa"
                     : "TAPOS NA ANG BOTOHAN"}
                 </Typography>
-                <Typography variant="h4" fontWeight="bold" mt={1}>
+
+                <Typography variant="h4" fontWeight="900" color="text.primary">
                   {countdown}
                 </Typography>
               </Box>
-            </Box>
-          </Paper>
+            </Paper>
+          </Fade>
 
           <Stepper activeStep={step} alternativeLabel sx={{ mb: 6 }}>
             {steps.map((label) => (
@@ -463,7 +458,7 @@ const Vote: React.FC = () => {
                   ),
                 }}
                 sx={{ mb: 3 }}
-                disabled={!isVotingActive || isVerifying}
+                disabled={votingState !== "active" || isVerifying}
               />
 
               {verificationSent && (
@@ -474,6 +469,7 @@ const Vote: React.FC = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value.trim())}
                     sx={{ mb: 2 }}
+                    disabled={votingState !== "active"}
                   />
                   <TextField
                     label="Grade & Section"
@@ -481,6 +477,7 @@ const Vote: React.FC = () => {
                     value={gradeSection}
                     onChange={(e) => setGradeSection(e.target.value.trim())}
                     sx={{ mb: 2 }}
+                    disabled={votingState !== "active"}
                   />
                   <TextField
                     label="LRN (12 digits)"
@@ -494,6 +491,7 @@ const Vote: React.FC = () => {
                       lrn.length !== 12 ? "Dapat eksaktong 12 digits" : ""
                     }
                     sx={{ mb: 3 }}
+                    disabled={votingState !== "active"}
                   />
                   <TextField
                     label="6-Digit Code"
@@ -506,6 +504,7 @@ const Vote: React.FC = () => {
                     }
                     helperText="Suriin ang Gmail mo"
                     sx={{ mb: 4 }}
+                    disabled={votingState !== "active"}
                   />
 
                   <Button
@@ -514,15 +513,20 @@ const Vote: React.FC = () => {
                     fullWidth
                     onClick={handleVerifyCode}
                     disabled={
-                      !isVotingActive ||
+                      votingState !== "active" ||
                       verificationCode.length !== 6 ||
                       !fullName.trim() ||
                       !gradeSection.trim() ||
-                      lrn.length !== 12
+                      lrn.length !== 12 ||
+                      isVerifying
                     }
                     sx={{ py: 1.8 }}
                   >
-                    I-verify at Mag-vote
+                    {isVerifying ? (
+                      <CircularProgress size={24} />
+                    ) : (
+                      "I-verify at Mag-vote"
+                    )}
                   </Button>
                 </>
               )}
@@ -535,21 +539,21 @@ const Vote: React.FC = () => {
                   fullWidth
                   onClick={handleSendVerification}
                   disabled={
-                    !isVotingActive ||
+                    votingState !== "active" ||
                     isVerifying ||
                     !email.toLowerCase().endsWith("@gmail.com")
                   }
                   sx={{ py: 1.8, mt: 2 }}
                 >
                   {isVerifying ? (
-                    <CircularProgress size={28} />
+                    <CircularProgress size={24} />
                   ) : (
                     "Ipadala ang Code"
                   )}
                 </Button>
               )}
 
-              {!isVotingActive && votingState === "ended" && (
+              {votingState === "ended" && (
                 <Alert severity="info" sx={{ mt: 4 }}>
                   Tapos na ang botohan. Salamat sa interes mo.
                 </Alert>
@@ -563,6 +567,12 @@ const Vote: React.FC = () => {
               {generalError && (
                 <Alert severity="error" sx={{ mb: 4 }}>
                   {generalError}
+                </Alert>
+              )}
+
+              {votingState !== "active" && (
+                <Alert severity="warning" sx={{ mb: 4 }}>
+                  Natapos na ang botohan. Hindi na maaaring mag-vote.
                 </Alert>
               )}
 
@@ -665,6 +675,7 @@ const Vote: React.FC = () => {
                             handleCandidateSelect(position, cand.candidateId)
                           }
                           sx={{ my: 1, alignItems: "flex-start" }}
+                          disabled={votingState !== "active" || isSubmitting}
                         />
                       ))}
                     </RadioGroup>
@@ -685,7 +696,7 @@ const Vote: React.FC = () => {
                 fullWidth
                 disabled={
                   isSubmitting ||
-                  !isVotingActive ||
+                  votingState !== "active" ||
                   hasVoted ||
                   candidatesLoading ||
                   candidates.length === 0
@@ -703,25 +714,27 @@ const Vote: React.FC = () => {
 
           {/* Step 2 - Success */}
           {step === 2 && (
-            <Box textAlign="center" py={10}>
-              <CheckCircleIcon
-                sx={{ fontSize: 140, color: "#4caf50", mb: 4 }}
-              />
-              <Typography
-                variant="h4"
-                color="#4caf50"
-                fontWeight="bold"
-                gutterBottom
-              >
-                Salamat sa Iyong Boto!
-              </Typography>
-              <Typography variant="h6" color="text.secondary" mt={2}>
-                Matagumpay nang naitala ang iyong boto.
-              </Typography>
-              <Typography variant="body1" mt={3}>
-                Ipapahayag ang opisyal na resulta sa lalong madaling panahon.
-              </Typography>
-            </Box>
+            <Fade in timeout={800}>
+              <Box textAlign="center" py={10}>
+                <CheckCircleIcon
+                  sx={{ fontSize: 140, color: "#4caf50", mb: 4 }}
+                />
+                <Typography
+                  variant="h4"
+                  color="#4caf50"
+                  fontWeight="bold"
+                  gutterBottom
+                >
+                  Salamat sa Iyong Boto!
+                </Typography>
+                <Typography variant="h6" color="text.secondary" mt={2}>
+                  Matagumpay nang naitala ang iyong boto.
+                </Typography>
+                <Typography variant="body1" mt={3}>
+                  Ipapahayag ang opisyal na resulta sa lalong madaling panahon.
+                </Typography>
+              </Box>
+            </Fade>
           )}
         </Paper>
       </Container>
