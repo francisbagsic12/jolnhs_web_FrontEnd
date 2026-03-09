@@ -34,7 +34,7 @@ import {
 } from "@mui/icons-material";
 import { isAfter } from "date-fns";
 
-const API_BASE = "https://jolnhsweb.onrender.com/api";
+const API_BASE = "http://localhost:5000/api";
 
 interface Candidate {
   _id?: string;
@@ -65,7 +65,7 @@ export const ElectionControlTab: React.FC = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-
+  console.log(startDate);
   const [teams, setTeams] = useState<string[]>([]); // Available teams
 
   const [loading, setLoading] = useState(true);
@@ -90,12 +90,12 @@ export const ElectionControlTab: React.FC = () => {
       const data = await res.json();
       setStatus(data);
 
-      if (data.votingStart) {
-        setStartDate(new Date(data.votingStart).toISOString().slice(0, 16));
-      }
-      if (data.votingEnd) {
-        setEndDate(new Date(data.votingEnd).toISOString().slice(0, 16));
-      }
+      // if (data.votingStart) {
+      //   setStartDate(new Date(data.votingStart).toISOString().slice(0, 16));
+      // }
+      // if (data.votingEnd) {
+      //   setEndDate(new Date(data.votingEnd).toISOString().slice(0, 16));
+      // }
     } catch (err) {
       console.error(err);
     }
@@ -107,13 +107,13 @@ export const ElectionControlTab: React.FC = () => {
       if (!res.ok) throw new Error();
       const data: Candidate[] = await res.json(); // ← type assertion here
       setCandidates(data || []);
-
       // Now TypeScript knows c.team is string
       const uniqueTeams = [
         ...new Set(
-          data.map((c) => c.team).filter((team): team is string => !!team) // type guard
+          data.map((c) => c.team).filter((team): team is string => !!team), // type guard
         ),
       ];
+
       setTeams(uniqueTeams);
     } catch (err) {
       console.error(err);
@@ -156,14 +156,16 @@ export const ElectionControlTab: React.FC = () => {
     const confirmMsg = `START NEW ELECTION?\n\nThis will:\n• Reset all votes\n• Allow all students to vote again\n• Lock candidate list\n• Start from ${startDate} to ${endDate}\n\nContinue?`;
 
     if (!confirm(confirmMsg)) return;
-
     setActionLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/set-voting-period`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ start: startDate, end: endDate }),
-      });
+      const res = await fetch(
+        `${API_BASE}/admin/set-voting-period/${startDate}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ start: startDate, end: endDate }),
+        },
+      );
 
       if (res.ok) {
         alert("New election started successfully!");
@@ -190,7 +192,9 @@ export const ElectionControlTab: React.FC = () => {
       });
       if (res.ok) {
         alert("Voting stopped successfully!");
+        setStartDate("");
         fetchStatus();
+        fetchCandidates();
       } else {
         alert("Failed to stop voting.");
       }
@@ -244,7 +248,23 @@ export const ElectionControlTab: React.FC = () => {
       setActionLoading(false);
     }
   };
-
+  // const deleteCandidateAfterEnd = async () => {
+  //   try {
+  //     const res = await fetch(
+  //       `${API_BASE}/admin/deleteAllCandidatesONTime/${startDate}`,
+  //       {
+  //         method: "DELETE",
+  //       },
+  //     );
+  //     if (res.ok) {
+  //       alert("All candidates deleted successfully!");
+  //     } else {
+  //       alert("Failed to delete all candidates.");
+  //     }
+  //   } catch (err) {
+  //     alert("Network error while deleting candidates.");
+  //   }
+  // };
   const handleDelete = async (candidateId: string) => {
     if (isVotingActive) return alert("Cannot delete during active voting.");
     if (!confirm("Delete this candidate permanently?")) return;

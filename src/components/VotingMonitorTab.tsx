@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import {
   Paper,
   Typography,
-  Button,
   Box,
   Alert,
   Table,
@@ -20,7 +19,6 @@ import {
   Card,
   CardContent,
   Tooltip,
-  Zoom,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -31,7 +29,7 @@ import {
   // Info as InfoIcon,
 } from "@mui/icons-material";
 
-const API_BASE = "https://jolnhsweb.onrender.com/api";
+const API_BASE = "http://localhost:5000/api";
 
 // Interfaces (same as before, but kept for completeness)
 interface VotedStudent {
@@ -96,13 +94,13 @@ export const VotingMonitorTab: React.FC = () => {
     isVotingActive: false,
   });
 
-  const [results, setResults] = useState<TallyResult[]>([]);
+  const [results, _setResults] = useState<TallyResult[]>([]);
   const [resultsOpen, setResultsOpen] = useState(false);
-  const [resultsLoading, setResultsLoading] = useState(false);
+  const [resultsLoading, _setResultsLoading] = useState(false);
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<VotedStudent | null>(
-    null
+    null,
   );
   const [voteDetails, setVoteDetails] = useState<VoteDetails | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
@@ -131,7 +129,7 @@ export const VotingMonitorTab: React.FC = () => {
       // STRICTLY show only current election votes
       if (electionStatus.currentElectionId) {
         students = students.filter(
-          (s) => s.electionId === electionStatus.currentElectionId
+          (s) => s.electionId === electionStatus.currentElectionId,
         );
       } else {
         students = []; // No current election → no votes shown
@@ -176,20 +174,20 @@ export const VotingMonitorTab: React.FC = () => {
     }
   };
 
-  const fetchResults = async () => {
-    try {
-      setResultsLoading(true);
-      const res = await fetch(`${API_BASE}/admin/results`);
-      if (!res.ok) throw new Error("Failed to fetch results");
-      const data: TallyResult[] = await res.json();
-      setResults(data);
-    } catch (err) {
-      setResults([]);
-      console.error(err);
-    } finally {
-      setResultsLoading(false);
-    }
-  };
+  // const fetchResults = async () => {
+  //   try {
+  //     setResultsLoading(true);
+  //     const res = await fetch(`${API_BASE}/admin/results`);
+  //     if (!res.ok) throw new Error("Failed to fetch results");
+  //     const data: TallyResult[] = await res.json();
+  //     setResults(data);
+  //   } catch (err) {
+  //     setResults([]);
+  //     console.error(err);
+  //   } finally {
+  //     setResultsLoading(false);
+  //   }
+  // };
 
   // Effects
   useEffect(() => {
@@ -203,10 +201,10 @@ export const VotingMonitorTab: React.FC = () => {
     }
   }, [electionStatus.currentElectionId, electionStatus.isVotingActive]);
 
-  const handleOpenResults = async () => {
-    await fetchResults();
-    setResultsOpen(true);
-  };
+  // const handleOpenResults = async () => {
+  //   await fetchResults();
+  //   setResultsOpen(true);
+  // };
 
   const handleOpenModal = async (student: VotedStudent) => {
     setSelectedStudent(student);
@@ -226,7 +224,7 @@ export const VotingMonitorTab: React.FC = () => {
       map[c.candidateId] = c.name;
       return map;
     },
-    {}
+    {},
   );
 
   const candidateTeamMap = candidates.reduce<Record<string, string>>(
@@ -234,7 +232,7 @@ export const VotingMonitorTab: React.FC = () => {
       map[c.candidateId] = c.team;
       return map;
     },
-    {}
+    {},
   );
 
   return (
@@ -285,12 +283,12 @@ export const VotingMonitorTab: React.FC = () => {
           }
           sx={{ mb: 4, borderRadius: 2 }}
         >
-          {electionStatus.isVotingActive
+          {/* {electionStatus.isVotingActive
             ? "Voting is currently ONGOING — Live monitoring active"
-            : "Election has ENDED — Results are now final!"}
+            : "Election has ENDED — Results are now final!"} */}
         </Alert>
 
-        {/* Modern Notification when Election Ends */}
+        {/* Modern Notification when Election Ends
         {!electionStatus.isVotingActive && (
           <Zoom in={!electionStatus.isVotingActive}>
             <Alert
@@ -319,7 +317,7 @@ export const VotingMonitorTab: React.FC = () => {
               Congratulations to the winners!
             </Alert>
           </Zoom>
-        )}
+        )} */}
 
         {/* Voted Students Section */}
         <Box
@@ -604,14 +602,14 @@ export const VotingMonitorTab: React.FC = () => {
                     if (!acc[r.position]) acc[r.position] = [];
                     acc[r.position].push(r);
                     return acc;
-                  }, {})
+                  }, {}),
                 ).map(([position, candidates]) => {
                   const sorted = [...candidates].sort(
-                    (a, b) => b.voteCount - a.voteCount
+                    (a, b) => b.voteCount - a.voteCount,
                   );
                   const maxVotes = sorted[0].voteCount;
                   const winners = sorted.filter(
-                    (c) => c.voteCount === maxVotes
+                    (c) => c.voteCount === maxVotes,
                   );
 
                   return (

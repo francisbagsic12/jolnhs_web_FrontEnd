@@ -35,7 +35,7 @@ const clubs = [
     value: "sports",
     label: "Sports Club",
     desc: "Basketball, volleyball, athletics – develop teamwork and fitness!",
-    img: "https://www.dailybreeze.com/wp-content/uploads/2023/07/LDN-L-LEAGUE-0702-1.jpg",
+    img: "/sports.jpg",
   },
   {
     value: "torch",
@@ -59,7 +59,7 @@ const clubs = [
     value: "dance",
     label: "Dance Club",
     desc: "Folk dance, modern, and performance arts.",
-    img: "https://npr.brightspotcdn.com/e9/c1/5cf95b654e47898837038e79bd91/img-7614.jpg",
+    img: "/dance.jpg",
   },
   {
     value: "banda",
@@ -69,7 +69,7 @@ const clubs = [
   },
 ];
 
-const BACKEND_URL = "https://jolnhsweb.onrender.com"; // Change to production URL later
+const BACKEND_URL = "http://localhost:5000"; // Change to production URL later
 
 const ClubRegistration: React.FC = () => {
   const [step, setStep] = useState(0);

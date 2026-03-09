@@ -36,7 +36,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
         email === "admin@juliaortizluisnhs.deped.gov.ph" &&
         password === "admin123"
       ) {
-        onLogin(); 
+        onLogin();
         navigate("/admin");
       } else {
         setError("Invalid email or password.");

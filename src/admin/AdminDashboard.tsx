@@ -160,7 +160,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
       // 3. Registration Stats
       const regRes = await fetch(
-        `${API_BASE}/admin/dashboard-registration-stats`
+        `${API_BASE}/admin/dashboard-registration-stats`,
       );
       if (regRes.ok) {
         const regData = await regRes.json();
@@ -177,12 +177,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             const aIndex = positionOrder.findIndex(
               (pos) =>
                 positionLabels[pos].toLowerCase() ===
-                a.positionLabel.toLowerCase()
+                a.positionLabel.toLowerCase(),
             );
             const bIndex = positionOrder.findIndex(
               (pos) =>
                 positionLabels[pos].toLowerCase() ===
-                b.positionLabel.toLowerCase()
+                b.positionLabel.toLowerCase(),
             );
             return aIndex - bIndex; // Lower index = higher position
           });
@@ -336,7 +336,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       const winner = recentWinners.winners.find(
                         (w) =>
                           w.positionLabel.toLowerCase() ===
-                          positionLabels[posKey].toLowerCase()
+                          positionLabels[posKey].toLowerCase(),
                       );
 
                       // Kung walang winner sa position na 'to, skip lang

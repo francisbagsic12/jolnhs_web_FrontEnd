@@ -36,7 +36,7 @@ import {
 } from "@mui/icons-material";
 import { format, parseISO, isValid } from "date-fns";
 
-const API_BASE = "https://jolnhsweb.onrender.com/api";
+const API_BASE = "http://localhost:5000/api";
 
 // Position labels
 // const positionLabels: Record<string, string> = {
@@ -121,7 +121,7 @@ export const VoteHistory = () => {
 
   // Fetch summary + archived votes
   const fetchElectionSummary = async (
-    period: ElectionPeriod // ← change from string to ElectionPeriod
+    period: ElectionPeriod, // ← change from string to ElectionPeriod
   ): Promise<ElectionSummary> => {
     const electionId = period.id; // extract id here
 
@@ -131,7 +131,7 @@ export const VoteHistory = () => {
 
       // Try historical votes first
       const resHistory = await fetch(
-        `${API_BASE}/admin/historical-votes/${electionId}`
+        `${API_BASE}/admin/historical-votes/${electionId}`,
       );
       if (resHistory.ok) {
         const history = await resHistory.json();
@@ -144,7 +144,7 @@ export const VoteHistory = () => {
           const results = await resResults.json();
           totalVotes = results.reduce(
             (sum: number, r: any) => sum + r.voteCount,
-            0
+            0,
           );
         }
       }
@@ -223,7 +223,7 @@ export const VoteHistory = () => {
     const total = filteredSummaries.reduce((s, e) => s + e.totalVotes, 0);
     const archived = filteredSummaries.reduce(
       (s, e) => s + (e.archivedVotes || 0),
-      0
+      0,
     );
     const count = filteredSummaries.length;
     return {
@@ -258,7 +258,7 @@ export const VoteHistory = () => {
 
       // Fetch voter list (historical votes)
       const resHistory = await fetch(
-        `${API_BASE}/admin/historical-votes/${election.id}`
+        `${API_BASE}/admin/historical-votes/${election.id}`,
       );
       if (resHistory.ok) {
         const data = await resHistory.json();
@@ -453,51 +453,63 @@ export const VoteHistory = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredSummaries.map((election) => (
-                  <TableRow
-                    key={election.id}
-                    hover
-                    sx={{ cursor: "pointer" }}
-                    onClick={() => handleRowClick(election)}
-                  >
-                    <TableCell>
-                      {format(
-                        parseISO(`${election.date.replace("/", "-")}-01`),
-                        "MMM yyyy"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
-                      >
-                        {election.flag && (
-                          <Typography variant="h6">{election.flag}</Typography>
-                        )}
-                        <Box>
-                          <Typography variant="body1" fontWeight="medium">
-                            {election.country || "Philippines"}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {election.title}
-                          </Typography>
+                filteredSummaries.map((election) => {
+                  const dateStr = election.date
+                    ? `${election.date.replace(/\//g, "-")}-01`
+                    : "2025-01-01";
+                  const parsedDate = dateStr ? parseISO(dateStr) : new Date();
+                  const isValidDate = isValid(parsedDate);
+                  const displayDate = isValidDate
+                    ? format(parsedDate, "MMM yyyy")
+                    : election.date || "Unknown";
+
+                  return (
+                    <TableRow
+                      key={election.id}
+                      hover
+                      sx={{ cursor: "pointer" }}
+                      onClick={() => handleRowClick(election)}
+                    >
+                      <TableCell>{displayDate}</TableCell>
+                      <TableCell>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.5,
+                          }}
+                        >
+                          {election.flag && (
+                            <Typography variant="h6">
+                              {election.flag}
+                            </Typography>
+                          )}
+                          <Box>
+                            <Typography variant="body1" fontWeight="medium">
+                              {election.country || "Philippines"}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {election.title}
+                            </Typography>
+                          </Box>
                         </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={election.type}
-                        size="small"
-                        color="primary"
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      {election.totalVotes.toLocaleString()}
-                    </TableCell>
-                    <TableCell align="right">
-                      {election.archivedVotes?.toLocaleString() || "—"}
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={election.type}
+                          size="small"
+                          color="primary"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        {election.totalVotes.toLocaleString()}
+                      </TableCell>
+                      <TableCell align="right">
+                        {election.archivedVotes?.toLocaleString() || "—"}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -583,7 +595,7 @@ export const VoteHistory = () => {
                               <TableCell>
                                 {format(
                                   parseISO(voter.votedAt),
-                                  "MMM d, yyyy - h:mm a"
+                                  "MMM d, yyyy - h:mm a",
                                 )}
                               </TableCell>
                             </TableRow>

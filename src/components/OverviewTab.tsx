@@ -21,10 +21,10 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import { styled } from "@mui/material/styles";
 
-const BACKEND_URL = "https://jolnhsweb.onrender.com"; // Change to production URL
+const BACKEND_URL = "http://localhost:5000"; // Change to production URL
 
 // Hologram Card Style
-const HoloCard = styled(Card)(({ theme }) => ({
+const HoloCard = styled(Card)(() => ({
   background: "rgba(15, 23, 42, 0.67)",
   backdropFilter: "blur(16px)",
   border: "1px solid rgba(96, 165, 250, 0.25)",
@@ -49,16 +49,16 @@ const HoloCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-const ShimmerSkeleton = styled(Skeleton)({
-  background:
-    "linear-gradient(90deg, #1e3a8a22 0%, #60a5fa44 50%, #1e3a8a22 100%)",
-  backgroundSize: "200% 100%",
-  animation: "shimmer 1.5s infinite",
-  "@keyframes shimmer": {
-    "0%": { backgroundPosition: "200% 0" },
-    "100%": { backgroundPosition: "-200% 0" },
-  },
-});
+// const ShimmerSkeleton = styled(Skeleton)({
+//   background:
+//     "linear-gradient(90deg, #1e3a8a22 0%, #60a5fa44 50%, #1e3a8a22 100%)",
+//   backgroundSize: "200% 100%",
+//   animation: "shimmer 1.5s infinite",
+//   "@keyframes shimmer": {
+//     "0%": { backgroundPosition: "200% 0" },
+//     "100%": { backgroundPosition: "-200% 0" },
+//   },
+// });
 
 const positionOrder = [
   "President",
@@ -302,7 +302,7 @@ const OverviewTab: React.FC = () => {
                   positionOrder.map((position) => {
                     const candidates = votingStats?.byPosition[position] || [];
                     const sorted = [...candidates].sort(
-                      (a, b) => b.votes - a.votes
+                      (a, b) => b.votes - a.votes,
                     );
                     const leader = sorted[0];
 
@@ -557,7 +557,7 @@ const OverviewTab: React.FC = () => {
                     isExporting || registrationStats?.totalRegistrations === 0
                   }
                 >
-                  {registrationStats?.totalRegistrations ?? 0 > 0
+                  {(registrationStats?.totalRegistrations ?? 0 > 0)
                     ? "Export Registration Matrix (CSV)"
                     : "No Data to Export"}
                 </Button>

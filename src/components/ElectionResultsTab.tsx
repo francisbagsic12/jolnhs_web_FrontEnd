@@ -66,6 +66,8 @@ interface ResultsData {
   totalVotes: number;
   electionTitle?: string;
   completedAt?: string;
+  isShown?: boolean;
+  electionId?: string;
 }
 
 const positionOrder = [
@@ -94,12 +96,17 @@ const getMedalColor = (index: number): string => {
 export const ElectionResultsTab: React.FC = () => {
   const [periods, setPeriods] = useState<ElectionPeriod[]>([]);
   const [selectedPeriod, setSelectedPeriod] = useState<"current" | string>(
-    "current"
+    "current",
   );
   const [results, setResults] = useState<ResultsData>({
     winners: [],
     totalVotes: 0,
   });
+  const [togglingShow, setTogglingShow] = useState<boolean>(false);
+  const [isShown, setIsShown] = useState<boolean>(false);
+  const [currentElectionId, setCurrentElectionId] = useState<string | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [_periodLoading, setPeriodLoading] = useState<boolean>(true);
   const [error, setError] = useState("");
@@ -111,6 +118,13 @@ export const ElectionResultsTab: React.FC = () => {
       const res = await fetch(`${API_BASE}/admin/election-periods`);
       if (!res.ok) throw new Error("Failed to fetch periods");
       const data = await res.json();
+
+      // keep track if admin has toggled showing winners and current election id
+      setIsShown(data.isShown === true);
+      setCurrentElectionId(
+        data.electionId ||
+          (selectedPeriod !== "current" ? selectedPeriod : null),
+      );
       setPeriods(data.periods || []);
     } catch (err) {
       console.error(err);
@@ -136,13 +150,20 @@ export const ElectionResultsTab: React.FC = () => {
           throw new Error(
             selectedPeriod === "current"
               ? " voting is ongoing."
-              : "No results have been recorded for this election."
+              : "No results have been recorded for this election.",
           );
         }
         throw new Error("Hindi ma-load ang resulta");
       }
 
       const data = await res.json();
+
+      // Sync isShown status and election ID from server
+      setIsShown(data.isShown === true);
+      setCurrentElectionId(
+        data.electionId ||
+          (selectedPeriod !== "current" ? selectedPeriod : null),
+      );
 
       setResults({
         winners: data.winners || [],
@@ -281,7 +302,7 @@ export const ElectionResultsTab: React.FC = () => {
                             children: [new Paragraph(`${w.percentage}%`)],
                           }),
                         ],
-                      })
+                      }),
                   ),
                 ],
                 borders: {
@@ -321,13 +342,42 @@ export const ElectionResultsTab: React.FC = () => {
         blob,
         `Election_Results_${electionTitle || "Latest"}_${
           new Date().toISOString().split("T")[0]
-        }.docx`
+        }.docx`,
       );
     } catch (err) {
       console.error("Error generating Word document:", err);
       alert("May error sa paglikha ng Word file. Subukang muli.");
     } finally {
       setExportingWord(false);
+    }
+  };
+
+  // Toggle show winners on server
+  const handleToggleShowWinners = async () => {
+    // determine election id to toggle
+    const eid =
+      currentElectionId ||
+      (selectedPeriod !== "current" ? selectedPeriod : null);
+    if (!eid) {
+      alert("No election selected to toggle.");
+      return;
+    }
+
+    try {
+      setTogglingShow(true);
+      const res = await fetch(`${API_BASE}/admin/winners/${eid}/toggle-show`, {
+        method: "PUT",
+      });
+      if (!res.ok) throw new Error("Failed to toggle show winners");
+      const data = await res.json();
+      setIsShown(data.isShown === true);
+    } catch (err) {
+      console.error("Toggle show winners error:", err);
+      alert("May error sa pag-toggle ng show winners. Tingnan ang console.");
+    } finally {
+      setTogglingShow(false);
+      // refresh results to sync latest state
+      fetchResults();
     }
   };
 
@@ -354,9 +404,25 @@ export const ElectionResultsTab: React.FC = () => {
           <Box sx={{ display: "flex", alignItems: "center", gap: 3, mb: 3 }}>
             <EmojiEvents sx={{ fontSize: 60 }} />
             <Box>
-              <Typography variant="h3" fontWeight="bold">
-                {headerTitle}
-              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Typography variant="h3" fontWeight="bold">
+                  {headerTitle}
+                </Typography>
+                {isShown && (
+                  <Chip
+                    label="SHOWING"
+                    color="success"
+                    size="small"
+                    sx={{
+                      fontWeight: "bold",
+                      fontSize: "0.9rem",
+                      height: "36px",
+                      bgcolor: "#4caf50",
+                      color: "white",
+                    }}
+                  />
+                )}
+              </Box>
               {completedAt && (
                 <Typography variant="subtitle1" sx={{ opacity: 0.85 }}>
                   Results as of {completedAt}
@@ -451,6 +517,28 @@ export const ElectionResultsTab: React.FC = () => {
                 sx={{ fontWeight: "bold" }}
               >
                 {exportingWord ? "Exporting..." : "Export to Word"}
+              </Button>
+
+              {/* Show / Hide Winners Button (admin) */}
+              <Button
+                variant="contained"
+                color={isShown ? "error" : "primary"}
+                startIcon={
+                  togglingShow ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <EmojiEvents />
+                  )
+                }
+                onClick={handleToggleShowWinners}
+                disabled={togglingShow || loading || winners.length === 0}
+                sx={{ fontWeight: "bold" }}
+              >
+                {togglingShow
+                  ? "Updating..."
+                  : isShown
+                    ? "Hide Winners"
+                    : "Show Winners"}
               </Button>
             </Box>
           </Box>

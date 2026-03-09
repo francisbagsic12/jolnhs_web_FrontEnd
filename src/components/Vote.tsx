@@ -78,8 +78,8 @@ const Vote: React.FC = () => {
 
   const steps = ["Pag-verify", "Pagboto", "Kumpirmasyon"];
 
-  const BACKEND_URL = "https://jolnhsweb.onrender.com/api"; // ← Change to production URL
-
+  // const BACKEND_URL = "https://jolnhsweb.onrender.com/api"; // ← Change to production URL
+  const BACKEND_URL = "http://localhost:5000/api";
   // Fetch election status (priority: isVotingActive flag)
   useEffect(() => {
     const fetchStatus = async () => {
@@ -112,7 +112,7 @@ const Vote: React.FC = () => {
               .toString()
               .padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s
               .toString()
-              .padStart(2, "0")}`
+              .padStart(2, "0")}`,
           );
           setVotingState("upcoming");
         } else if (end && now <= end) {
@@ -126,7 +126,7 @@ const Vote: React.FC = () => {
               .toString()
               .padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s
               .toString()
-              .padStart(2, "0")}`
+              .padStart(2, "0")}`,
           );
           setVotingState("active");
         } else {
@@ -301,7 +301,7 @@ const Vote: React.FC = () => {
           data.error?.includes("period")
         ) {
           setGeneralError(
-            "Bigla nang natapos ang botohan. Hindi na naitala ang boto."
+            "Bigla nang natapos ang botohan. Hindi na naitala ang boto.",
           );
           setStep(0);
         } else {
@@ -340,7 +340,7 @@ const Vote: React.FC = () => {
       acc[cand.position].push(cand);
       return acc;
     },
-    {}
+    {},
   );
 
   const positionLabels: Record<string, string> = {
@@ -379,14 +379,14 @@ const Vote: React.FC = () => {
                   votingState === "active"
                     ? "#e8f5e9"
                     : votingState === "upcoming"
-                    ? "#fff3e0"
-                    : "#ffebee",
+                      ? "#fff3e0"
+                      : "#ffebee",
                 border: `3px solid ${
                   votingState === "active"
                     ? "#4caf50"
                     : votingState === "upcoming"
-                    ? "#ff9800"
-                    : "#f44336"
+                      ? "#ff9800"
+                      : "#f44336"
                 }`,
                 textAlign: "center",
               }}
@@ -411,8 +411,8 @@ const Vote: React.FC = () => {
                   {votingState === "active"
                     ? "BUKAS ANG BOTOHAN!"
                     : votingState === "upcoming"
-                    ? "Magbubukas Pa"
-                    : "TAPOS NA ANG BOTOHAN"}
+                      ? "Magbubukas Pa"
+                      : "TAPOS NA ANG BOTOHAN"}
                 </Typography>
 
                 <Typography variant="h4" fontWeight="900" color="text.primary">
@@ -499,7 +499,7 @@ const Vote: React.FC = () => {
                     value={verificationCode}
                     onChange={(e) =>
                       setVerificationCode(
-                        e.target.value.replace(/\D/g, "").slice(0, 6)
+                        e.target.value.replace(/\D/g, "").slice(0, 6),
                       )
                     }
                     helperText="Suriin ang Gmail mo"

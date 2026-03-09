@@ -44,7 +44,7 @@ import {
   TableRow,
 } from "@mui/material";
 
-const BACKEND_URL = "https://jolnhsweb.onrender.com";
+const BACKEND_URL = "http://localhost:5000";
 
 const NeonCard = styled(Card)(() => ({
   background: "rgba(15, 23, 42, 0.75)",
@@ -106,7 +106,7 @@ const AVAILABLE_CLUBS: Club[] = [
     value: "sports",
     label: "Sports Club",
     desc: "Basketball, volleyball, athletics",
-    img: "https://www.dailybreeze.com/wp-content/uploads/2023/07/LDN-L-LEAGUE-0702-1.jpg",
+    img: "/sports.jpg",
   },
   {
     value: "torch",
@@ -130,7 +130,7 @@ const AVAILABLE_CLUBS: Club[] = [
     value: "dance",
     label: "Dance Club",
     desc: "Folk, modern & performance dance",
-    img: "https://npr.brightspotcdn.com/e9/c1/5cf95b654e47898837038e79bd91/img-7614.jpg",
+    img: "/dance.jpg",
   },
   {
     value: "banda",
@@ -142,7 +142,7 @@ const AVAILABLE_CLUBS: Club[] = [
 
 const ClubRegistrationsTab: React.FC = () => {
   const [registrations, setRegistrations] = useState<Record<string, Student[]>>(
-    {}
+    {},
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -233,10 +233,10 @@ const ClubRegistrationsTab: React.FC = () => {
     return AVAILABLE_CLUBS.map((club) => {
       const students = registrations[club.value] || [];
       const registeredCount = students.filter(
-        (s) => s.status === "approved"
+        (s) => s.status === "approved",
       ).length;
       const pendingCount = students.filter(
-        (s) => s.status === "pending"
+        (s) => s.status === "pending",
       ).length;
 
       return {
@@ -280,7 +280,7 @@ const ClubRegistrationsTab: React.FC = () => {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: action }),
-        }
+        },
       );
 
       if (!res.ok) {
@@ -293,7 +293,7 @@ const ClubRegistrationsTab: React.FC = () => {
         const updated = { ...prev };
         if (updated[selectedClub.value]) {
           updated[selectedClub.value] = updated[selectedClub.value].map((s) =>
-            s.id === studentId ? { ...s, status: action } : s
+            s.id === studentId ? { ...s, status: action } : s,
           );
         }
         return updated;
@@ -332,7 +332,7 @@ const ClubRegistrationsTab: React.FC = () => {
           s.name.toLowerCase().includes(term) ||
           s.lrn.includes(term) ||
           s.section.toLowerCase().includes(term) ||
-          s.email.toLowerCase().includes(term)
+          s.email.toLowerCase().includes(term),
       );
     }
 
@@ -370,7 +370,7 @@ const ClubRegistrationsTab: React.FC = () => {
           <Tooltip title="Refresh all data">
             <IconButton
               color="primary"
-              onClick={fetchData}
+              onClick={fetchData as any}
               disabled={loading}
               sx={{
                 bgcolor: alpha("#60a5fa", 0.15),
@@ -663,15 +663,15 @@ const ClubRegistrationsTab: React.FC = () => {
                     {searchTerm
                       ? "No results found"
                       : activeTab === 0
-                      ? "No approved members yet"
-                      : "No pending applications"}
+                        ? "No approved members yet"
+                        : "No pending applications"}
                   </Typography>
                   <Typography variant="body1">
                     {searchTerm
                       ? "Try different search terms"
                       : activeTab === 0
-                      ? "Approved members will appear here after review"
-                      : "New applications will appear here for approval"}
+                        ? "Approved members will appear here after review"
+                        : "New applications will appear here for approval"}
                   </Typography>
                 </Box>
               ) : (

@@ -22,10 +22,13 @@ import CampaignIcon from "@mui/icons-material/Campaign";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+// import PersonIcon from "@mui/icons-material/Person"; // ← Bagong icon para sa admins
+
+import BulletinBoard from "./BulletinBoard";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
-const API_BASE = "https://jolnhsweb.onrender.com/api";
+const API_BASE = "http://localhost:5000/api"; // ← Ayusin: dapat ay nasa .env at gamitin process.env.REACT_APP_API_BASE
 
 // Scroll to Top Button (unchanged)
 const ScrollTopButton: React.FC = () => {
@@ -125,18 +128,18 @@ const Home: React.FC = () => {
         const winnersRes = await fetch(`${API_BASE}/admin/winners`);
         if (!winnersRes.ok) throw new Error("Failed to load SSG officers");
         const winnersData = await winnersRes.json();
-
+        console.log(winnersData);
         if (winnersData.winners?.length > 0) {
           const sorted = [...winnersData.winners].sort((a: any, b: any) => {
             const aIdx = positionOrder.findIndex(
               (p) =>
                 positionLabels[p].toLowerCase() ===
-                a.positionLabel.toLowerCase()
+                a.positionLabel.toLowerCase(),
             );
             const bIdx = positionOrder.findIndex(
               (p) =>
                 positionLabels[p].toLowerCase() ===
-                b.positionLabel.toLowerCase()
+                b.positionLabel.toLowerCase(),
             );
             return aIdx - bIdx;
           });
@@ -153,13 +156,13 @@ const Home: React.FC = () => {
     fetchData();
   }, []);
 
-  const heroImage = "public/bg.jfif"; // Make sure this file exists
+  const heroImage = "/bg.jpg"; // ← Ayusin: gamitin /bg.jpg (root-relative, nasa public/)
 
   const clubs = [
     {
       name: "Sports Club",
       desc: "Develop strength, teamwork, and sportsmanship through basketball, volleyball, and athletics.",
-      img: "https://www.dailybreeze.com/wp-content/uploads/2023/07/LDN-L-LEAGUE-0702-1.jpg",
+      img: "/sports.jpg", // ← Ayusin din: ilipat sa public/ at gamitin root path
     },
     {
       name: "Torch Club",
@@ -179,7 +182,7 @@ const Home: React.FC = () => {
     {
       name: "Dance Troupe",
       desc: "Master folk, modern, and contemporary dance for performances and cultural events.",
-      img: "https://npr.brightspotcdn.com/e9/c1/5cf95b654e47898837038e79bd91/img-7614.jpg",
+      img: "/dance.jpg", // ← Root-relative
     },
     {
       name: "Banda Club",
@@ -261,7 +264,7 @@ const Home: React.FC = () => {
         </AnimatePresence>
       </Box>
 
-      {/* === NEW: Announcement Banner (User-Friendly & Beautiful) === */}
+      {/* Announcement Banner */}
       <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
         {loadingAnnouncement ? (
           <Skeleton
@@ -288,7 +291,6 @@ const Home: React.FC = () => {
                 boxShadow: "0 10px 40px rgba(255,179,0,0.2)",
               }}
             >
-              {/* Subtle animated background */}
               <Box
                 sx={{
                   position: "absolute",
@@ -361,18 +363,18 @@ const Home: React.FC = () => {
               textShadow: "0 0 20px rgba(0,212,255,0.5)",
             }}
           >
-            Supreme Student Government (SSG)
+            Supreme Secondary Learner's Government(SSLG)
           </Typography>
-          <Typography variant="h6" align="center" color="text.secondary" mb={6}>
+          {/* <Typography variant="h6" align="center" color="text.secondary" mb={6}>
             School Year 2025–2026 • Current Officers
-          </Typography>
+          </Typography> */}
 
           {loadingOfficers ? (
             <Grid container spacing={4} justifyContent="center">
               {[...Array(7)].map(
                 (
                   _,
-                  i // 7 positions
+                  i, // 7 positions
                 ) => (
                   <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={i}>
                     <Skeleton
@@ -381,7 +383,7 @@ const Home: React.FC = () => {
                       sx={{ borderRadius: 4 }}
                     />
                   </Grid>
-                )
+                ),
               )}
             </Grid>
           ) : error ? (
@@ -396,7 +398,7 @@ const Home: React.FC = () => {
               {/* Featured President */}
               {recentWinners.winners
                 .filter((w: any) =>
-                  w.positionLabel.toLowerCase().includes("president")
+                  w.positionLabel.toLowerCase().includes("president"),
                 )
                 .slice(0, 1)
                 .map((president: any) => (
@@ -497,7 +499,7 @@ const Home: React.FC = () => {
                     const officer = recentWinners.winners.find(
                       (w: any) =>
                         w.positionLabel.toLowerCase() ===
-                        positionLabels[posKey].toLowerCase()
+                        positionLabels[posKey].toLowerCase(),
                     );
 
                     if (!officer) return null;
@@ -762,6 +764,7 @@ const Home: React.FC = () => {
             </motion.div>
           </Box>
         </Box>
+        <BulletinBoard />
       </Container>
 
       <ScrollTopButton />
